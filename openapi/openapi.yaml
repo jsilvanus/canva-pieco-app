@@ -10,7 +10,7 @@ info:
 servers:
   - url: https://gateway.keskuskirkko.fi:8443
     description: Production Church Gateway
-  - url: http://127.0.0.1:8080
+  - url: http://127.0.0.1:3000
     description: Local Dev Gateway
 security:
   - BearerAuth: []
