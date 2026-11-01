@@ -1,6 +1,6 @@
 /**
  * Build-time configuration defined via environment variables.
- * Baked into the bundle during `npm run build`.
+ * Baked into the bundle during `pnpm run build`.
  */
 const env = (typeof import.meta !== "undefined" && import.meta.env) ? import.meta.env : (typeof process !== "undefined" ? process.env : {});
 
