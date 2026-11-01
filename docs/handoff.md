@@ -44,7 +44,7 @@ There is no separate receiver daemon running on the Pi; Pi Gateway exposes scope
 
 ## Build-time Configuration
 
-Environment variables baked into the static bundle during `npm run build`:
+Environment variables baked into the static bundle during `pnpm run build`:
 * `VITE_APP_NAME`: Build-time plugin display name (e.g. `"Keskuskirkko Slide Bridge"`).
 * `VITE_GATEWAY_URL`: Target Pi Gateway HTTPS URL (e.g. `"https://gateway.keskuskirkko.fi:8443"`).
 * `VITE_GATEWAY_API_KEY`: Secret authentication key for the gateway's Canva routes.
