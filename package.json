@@ -1,6 +1,10 @@
 {
   "name": "picanva",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=22"
+  },
   "private": true,
   "description": "Canva App plugin for church slide presentations and Pi Gateway control",
   "type": "module",
@@ -17,5 +21,11 @@
   },
   "devDependencies": {
     "vite": "^6.2.0"
+  },
+  "pi": {
+    "service": "picanva",
+    "displayName": "picanva",
+    "layer": "Layer 2: Media Pipeline",
+    "kind": "library"
   }
 }

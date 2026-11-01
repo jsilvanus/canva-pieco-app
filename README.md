@@ -66,7 +66,7 @@ To build a custom bundle for a specific church:
 VITE_APP_NAME="Keskuskirkko Slide Bridge" \
 VITE_GATEWAY_URL="https://gateway.keskuskirkko.fi:8443" \
 VITE_GATEWAY_API_KEY="church-token-xyz" \
-npm run build
+pnpm run build
 ```
 
 The resulting `dist/` folder contains pure static files (`index.html`, JS, CSS) ready to host.
@@ -77,8 +77,8 @@ The resulting `dist/` folder contains pure static files (`index.html`, JS, CSS) 
 
 ### Local Dev Server
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 Runs at `http://localhost:3100`.
 
@@ -86,7 +86,7 @@ Runs at `http://localhost:3100`.
 
 ### Tests
 ```bash
-npm test
+pnpm test
 ```
 Runs Node's native test runner against the client and API services with mock network responses.
 
