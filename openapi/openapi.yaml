@@ -3,7 +3,7 @@ info:
   title: Pi Gateway - Canva Plugin API
   version: 1.0.0
   description: >-
-    Restricted Pi Gateway endpoints exposed for the Canva App plugin (picanva).
+    Restricted Pi Gateway endpoints exposed for the Canva App plugin (canva-pieco-app).
     Allows uploading Canva slide exports directly into Pi Program storage,
     configuring the presentation pipeline and Pi Matrix display routing,
     and executing live presentation commands (slide stepper, FTB, projector pic mute).

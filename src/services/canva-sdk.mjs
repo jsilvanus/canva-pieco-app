@@ -80,7 +80,7 @@ export async function exportDesignPages() {
     if (err && (err.name === "AbortError" || err.message?.toLowerCase().includes("cancel"))) {
       return { status: "aborted", title: "", exportBlobs: [] };
     }
-    console.error("[picanva] Canva requestExport error:", err);
+    console.error("[canva-pieco-app] Canva requestExport error:", err);
     throw err;
   }
 }

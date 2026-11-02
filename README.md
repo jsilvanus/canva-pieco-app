@@ -1,6 +1,6 @@
-# picanva
+# canva-pieco-app
 
-**picanva** is the official Canva App (SDK plugin) for church slide presentations in the Pi stack. It runs directly inside Canva as an interactive panel, connecting to the church's **Pi Gateway** to stage media in **Pi Program**, configure **Pi Matrix** display routes, and control live slide playback during services.
+**canva-pieco-app** is the official Canva App (SDK plugin) for church slide presentations in the Pi stack. It runs directly inside Canva as an interactive panel, connecting to the church's **Pi Gateway** to stage media in **Pi Program**, configure **Pi Matrix** display routes, and control live slide playback during services.
 
 No separate receiver daemon is needed on the church Pi; Pi Gateway fronts the internal services and Pi Program manages slide media storage.
 
@@ -82,7 +82,7 @@ pnpm run dev
 ```
 Runs at `http://localhost:3100`.
 
-* When opened in a standard browser (outside Canva), `picanva` detects this and automatically enables **Dev Mock Mode** with simulated slide exports and local state simulation, allowing full testing of the 3-step workflow without an active Canva session or live Pi Gateway.
+* When opened in a standard browser (outside Canva), `canva-pieco-app` detects this and automatically enables **Dev Mock Mode** with simulated slide exports and local state simulation, allowing full testing of the 3-step workflow without an active Canva session or live Pi Gateway.
 
 ### Tests
 ```bash
