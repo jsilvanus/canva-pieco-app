@@ -1,5 +1,5 @@
 {
-  "name": "picanva",
+  "name": "canva-pieco-app",
   "version": "1.0.0",
   "packageManager": "pnpm@11.23.0",
   "engines": {
@@ -23,9 +23,9 @@
     "vite": "^6.2.0"
   },
   "pi": {
-    "service": "picanva",
-    "displayName": "picanva",
-    "layer": "Layer 2: Media Pipeline",
+    "service": "canva-pieco-app",
+    "displayName": "canva-pieco-app",
+    "layer": "Seam",
     "kind": "library"
   }
 }
