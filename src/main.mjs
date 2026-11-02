@@ -174,7 +174,7 @@ async function handlePushContent() {
     clearProgress();
     state.isExporting = false;
     state.isPushing = false;
-    console.error("[picanva] Push failed:", err);
+    console.error("[canva-pieco-app] Push failed:", err);
     showToast(err.message || "Failed to push slides.", "error");
     render();
   }
@@ -217,7 +217,7 @@ async function handleApplySetup() {
     render();
   } catch (err) {
     state.isSettingUp = false;
-    console.error("[picanva] Setup failed:", err);
+    console.error("[canva-pieco-app] Setup failed:", err);
     showToast(err.message || "Failed to configure presentation pipeline.", "error");
     render();
   }
@@ -258,7 +258,7 @@ async function handleSlideNav(action, targetPage = null) {
     render();
   } catch (err) {
     state.isControlling = false;
-    console.error("[picanva] Slide control failed:", err);
+    console.error("[canva-pieco-app] Slide control failed:", err);
     showToast(err.message || "Failed to change slide.", "error");
     render();
   }
@@ -280,7 +280,7 @@ async function handleToggleFtb() {
     showToast(newFtb ? "Fade to Black (FTB) ACTIVE" : "Fade to Black OFF", newFtb ? "info" : "success", 2000);
   } catch (err) {
     state.live.ftb = !newFtb; // revert
-    console.error("[picanva] FTB failed:", err);
+    console.error("[canva-pieco-app] FTB failed:", err);
     showToast(err.message || "Failed to toggle FTB.", "error");
   }
   render();
@@ -299,7 +299,7 @@ async function handleTogglePicMute() {
     showToast(newMute ? "Projector Pic Mute ON (Beams Blanked)" : "Projector Pic Mute OFF (Beams Live)", newMute ? "info" : "success", 2500);
   } catch (err) {
     state.live.picMute = !newMute; // revert
-    console.error("[picanva] Pic Mute failed:", err);
+    console.error("[canva-pieco-app] Pic Mute failed:", err);
     showToast(err.message || "Failed to toggle projector mute.", "error");
   }
   render();

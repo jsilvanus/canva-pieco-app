@@ -108,7 +108,7 @@ export async function pushContent({ title, pages }) {
     });
   } catch (err) {
     if (CONFIG.isDev) {
-      console.warn("[picanva] Gateway unreachable in dev mode - using local simulation:", err.message);
+      console.warn("[canva-pieco-app] Gateway unreachable in dev mode - using local simulation:", err.message);
       const presentationId = `pres_${Date.now()}`;
       devSimulationState.currentPresentation = {
         presentationId,
@@ -147,7 +147,7 @@ export async function setupPresentation({ presentationId, pipelineId, matrixRout
     });
   } catch (err) {
     if (CONFIG.isDev) {
-      console.warn("[picanva] Gateway unreachable in dev mode - simulating setup:", err.message);
+      console.warn("[canva-pieco-app] Gateway unreachable in dev mode - simulating setup:", err.message);
       devSimulationState.pipelineId = pipelineId;
       devSimulationState.matrixRoute = matrixRoute;
       devSimulationState.currentSlide = cueSlide;
@@ -182,7 +182,7 @@ export async function controlSlide({ pipelineId, action, page }) {
     });
   } catch (err) {
     if (CONFIG.isDev) {
-      console.warn("[picanva] Simulating slide control:", action, page);
+      console.warn("[canva-pieco-app] Simulating slide control:", action, page);
       if (action === "next") {
         devSimulationState.currentSlide = Math.min(devSimulationState.totalSlides, devSimulationState.currentSlide + 1);
       } else if (action === "prev") {
@@ -271,7 +271,7 @@ export async function pushCanvaGraphic({
     });
   } catch (err) {
     if (CONFIG.isDev) {
-      console.warn("[picanva] Gateway unreachable in dev mode - simulating graphics push:", err.message);
+      console.warn("[canva-pieco-app] Gateway unreachable in dev mode - simulating graphics push:", err.message);
       return {
         ok: true,
         isSimulated: true,
@@ -298,7 +298,7 @@ export async function setCanvaGraphicOffAir({ keyer = "usk", index = 1 } = {}) {
     });
   } catch (err) {
     if (CONFIG.isDev) {
-      console.warn("[picanva] Simulating graphic off-air:", err.message);
+      console.warn("[canva-pieco-app] Simulating graphic off-air:", err.message);
       return { ok: true, isSimulated: true, offAir: true, keyer, index };
     }
     throw err;

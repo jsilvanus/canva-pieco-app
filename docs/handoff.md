@@ -1,6 +1,6 @@
-# picanva Architecture & Hand-off
+# canva-pieco-app Architecture & Hand-off
 
-`picanva` is the Canva App (SDK plugin) that runs inside Canva. It connects from the user's browser in Canva directly to **Pi Gateway**, allowing operators to stage media in **Pi Program**, configure **Pi Matrix** display routes, and operate live presentations from Canva.
+`canva-pieco-app` is the Canva App (SDK plugin) that runs inside Canva. It connects from the user's browser in Canva directly to **Pi Gateway**, allowing operators to stage media in **Pi Program**, configure **Pi Matrix** display routes, and operate live presentations from Canva.
 
 There is no separate receiver daemon running on the Pi; Pi Gateway exposes scoped `/api/v1/canva/*` endpoints that proxy to Pi Program and Pi Matrix.
 
