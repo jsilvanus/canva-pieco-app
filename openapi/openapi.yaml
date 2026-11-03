@@ -52,21 +52,37 @@ paths:
                         type: string
                         example: Page 1
       responses:
-        "201":
-          description: Media saved in Pi Program
+        "202":
+          description: >-
+            Accepted. A task that follows the download, unpacking and thumbnails;
+            poll GET /api/v1/canva/tasks/{taskId} until state is ready.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: true }
-                  presentationId: { type: string, example: pres_89f02c4 }
-                  title: { type: string, example: Sunday Service 2026-11-01 }
-                  pageCount: { type: integer, example: 14 }
+                $ref: "#/components/schemas/CanvaTask"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "502":
           description: Pi Program storage upload failure
+
+  /api/v1/canva/tasks/{taskId}:
+    get:
+      summary: Progress of a push
+      operationId: getCanvaTask
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CanvaTask"
+        "404":
+          description: Unknown task
 
   /api/v1/canva/setup:
     post:
@@ -283,6 +299,20 @@ paths:
                   offAir: { type: boolean, example: true }
 
 components:
+  schemas:
+    CanvaTask:
+      type: object
+      properties:
+        taskId: { type: string }
+        presentationId: { type: string }
+        state: { type: string, enum: [queued, downloading, unpacking, preparing, ready, failed] }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        pageCount: { type: integer }
+        downloaded: { type: object, properties: { done: { type: integer }, total: { type: integer } } }
+        pictures: { type: object, properties: { done: { type: integer }, total: { type: integer } } }
+        saved: { type: boolean }
+        ready: { type: boolean }
+        error: { type: [string, "null"] }
   securitySchemes:
     BearerAuth:
       type: http

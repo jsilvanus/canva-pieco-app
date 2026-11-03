@@ -4,6 +4,8 @@ import { CONFIG } from "../src/config.mjs";
 import { isRunningInCanva, exportDesignPages } from "../src/services/canva-sdk.mjs";
 import {
   pushContent,
+  waitForTask,
+  describeTask,
   setupPresentation,
   controlSlide,
   toggleFtb,
@@ -24,12 +26,19 @@ beforeEach(() => {
     if (path === "/api/v1/canva/push") {
       return new Response(
         JSON.stringify({
-          success: true,
+          taskId: "ctask_mock",
           presentationId: "pres_mock123",
           title: body.title,
+          state: "queued",
+          progress: 0,
           pageCount: body.pages?.length || 0,
+          downloaded: { done: 0, total: body.pages?.length || 0 },
+          pictures: { done: 0, total: 0 },
+          saved: false,
+          ready: false,
+          error: null,
         }),
-        { status: 201, headers: { "Content-Type": "application/json" } }
+        { status: 202, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -134,9 +143,62 @@ test("gateway-api executes Step 1 (pushContent) successfully", async () => {
   ];
 
   const res = await pushContent({ title: "Sunday Service", pages });
-  assert.strictEqual(res.success, true);
+  assert.strictEqual(res.taskId, "ctask_mock");
   assert.strictEqual(res.presentationId, "pres_mock123");
+  assert.strictEqual(res.state, "queued");
   assert.strictEqual(res.pageCount, 2);
+});
+
+test("waitForTask reports every step until the slides are ready", async () => {
+  const steps = [
+    { state: "downloading", progress: 0.15, downloaded: { done: 1, total: 2 } },
+    { state: "unpacking", progress: 0.3 },
+    { state: "preparing", progress: 0.6, pictures: { done: 2, total: 4 }, saved: true },
+    { state: "ready", progress: 1, pictures: { done: 4, total: 4 }, saved: true, ready: true },
+  ];
+  let n = 0;
+  setFetchImpl(async () => new Response(JSON.stringify({ taskId: "t", presentationId: "p", pageCount: 2, ...steps[n++] }), { status: 200 }));
+  const seen = [];
+  const done = await waitForTask("t", { onUpdate: (t) => seen.push(describeTask(t).label), sleep: async () => {} });
+  assert.strictEqual(done.ready, true);
+  assert.deepStrictEqual(seen, [
+    "Fetching slides from Canva 1/2",
+    "Unpacking slides in Pi Program...",
+    "Making thumbnails 2/4",
+    "Ready to present",
+  ]);
+  assert.strictEqual(describeTask(steps[3]).percent, 100);
+  assert.ok(describeTask({ state: "downloading", progress: 0 }).percent >= 30);
+});
+
+test("waitForTask rejects with the gateway's reason when the task fails", async () => {
+  setFetchImpl(async () => new Response(JSON.stringify({ state: "failed", progress: 0.3, error: "a Canva page is larger than the limit" }), { status: 200 }));
+  await assert.rejects(waitForTask("t", { sleep: async () => {} }), /larger than the limit/);
+});
+
+test("waitForTask gives up on an unknown task and survives a short network break", async () => {
+  setFetchImpl(async () => new Response(JSON.stringify({ error: { message: "Unknown task" } }), { status: 404 }));
+  await assert.rejects(waitForTask("gone", { sleep: async () => {} }), /Unknown task/);
+  let calls = 0;
+  setFetchImpl(async () => {
+    calls += 1;
+    if (calls < 3) throw new Error("offline");
+    return new Response(JSON.stringify({ state: "ready", progress: 1, ready: true }), { status: 200 });
+  });
+  const done = await waitForTask("t", { sleep: async () => {} });
+  assert.strictEqual(done.state, "ready");
+});
+
+test("in dev mode without a gateway the push is simulated as a task that progresses to ready", async () => {
+  setFetchImpl(async () => {
+    throw new Error("connection refused");
+  });
+  const task = await pushContent({ title: "Dev", pages: [{ pageNumber: 1, url: "x" }, { pageNumber: 2, url: "y" }] });
+  assert.ok(task.taskId.startsWith("sim_"));
+  assert.strictEqual(task.isSimulated, true);
+  const done = await waitForTask(task.taskId, { pollMs: 20 });
+  assert.strictEqual(done.ready, true);
+  assert.deepStrictEqual(done.pictures, { done: 4, total: 4 });
 });
 
 test("gateway-api executes Step 2 (setupPresentation) with pipeline and matrix routing", async () => {
@@ -217,4 +279,31 @@ test("gateway-api executes setCanvaGraphicOffAir", async () => {
   assert.strictEqual(res.ok, true);
   assert.strictEqual(res.offAir, true);
   assert.strictEqual(res.keyer, "usk");
+});
+
+test("normalizeGatewayUrl accepts https (and http on localhost) and refuses the rest", async () => {
+  const { normalizeGatewayUrl } = await import("../src/config.mjs");
+  assert.strictEqual(normalizeGatewayUrl("https://gw.example.org/"), "https://gw.example.org");
+  assert.strictEqual(normalizeGatewayUrl("http://localhost:3000"), "http://localhost:3000");
+  assert.strictEqual(normalizeGatewayUrl("http://gw.example.org"), null);
+  assert.strictEqual(normalizeGatewayUrl("https://user:pw@gw.example.org"), null);
+  assert.strictEqual(normalizeGatewayUrl("javascript:alert(1)"), null);
+  assert.strictEqual(normalizeGatewayUrl(""), null);
+});
+
+test("saved settings win over the build defaults and can be cleared", async () => {
+  const store = new Map();
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
+  try {
+    const { CONFIG: cfg, saveRuntimeSettings, clearRuntimeSettings } = await import("../src/config.mjs");
+    const before = cfg.gatewayUrl;
+    saveRuntimeSettings({ gatewayUrl: "https://church.example.org/", gatewayApiKey: " k1 " });
+    assert.strictEqual(cfg.gatewayUrl, "https://church.example.org");
+    assert.strictEqual(cfg.gatewayApiKey, "k1");
+    assert.throws(() => saveRuntimeSettings({ gatewayUrl: "http://plain.example.org", gatewayApiKey: "" }), /https/);
+    clearRuntimeSettings();
+    assert.strictEqual(cfg.gatewayUrl, before);
+  } finally {
+    delete globalThis.localStorage;
+  }
 });
