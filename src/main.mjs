@@ -1,7 +1,9 @@
-import { CONFIG } from "./config.mjs";
+import { CONFIG, saveRuntimeSettings, clearRuntimeSettings } from "./config.mjs";
 import { exportDesignPages, isRunningInCanva } from "./services/canva-sdk.mjs";
 import {
   pushContent,
+  waitForTask,
+  describeTask,
   setupPresentation,
   controlSlide,
   toggleFtb,
@@ -20,6 +22,8 @@ const state = {
   isSettingUp: false,
   isControlling: false,
   gatewayStatus: "checking", // online | simulated | offline | checking
+  settingsOpen: false,
+  settingsError: "",
 
   // Broadcast Graphics (ATEM Flying Key & Live Driving)
   graphics: {
@@ -92,6 +96,11 @@ function setProgress(percent, label) {
   render();
 }
 
+function showTaskProgress(task) {
+  const { percent, label } = describeTask(task);
+  setProgress(percent, label);
+}
+
 function clearProgress() {
   state.progress.visible = false;
   state.progress.percent = 0;
@@ -148,18 +157,20 @@ async function handlePushContent() {
     }
 
     state.isPushing = true;
-    setProgress(55, `Uploading ${exportResult.exportBlobs.length} slides to Church Gateway...`);
+    setProgress(30, `Sending ${exportResult.exportBlobs.length} slides to the church...`);
     render();
 
-    const pushResult = await pushContent({
+    const task = await pushContent({
       title: exportResult.title || "Canva Slides",
       pages: exportResult.exportBlobs,
     });
+    showTaskProgress(task);
 
-    setProgress(95, "Staging media in Pi Program storage...");
+    // The gateway downloads the pages, Pi Program unpacks them and makes the thumbnails.
+    const finished = await waitForTask(task.taskId, { onUpdate: showTaskProgress });
     state.isPushing = false;
     state.staged = {
-      presentationId: pushResult.presentationId || `pres_${Date.now()}`,
+      presentationId: finished.presentationId || task.presentationId,
       title: exportResult.title || "Canva Presentation",
       pageCount: exportResult.exportBlobs.length,
       pages: exportResult.exportBlobs,
@@ -493,6 +504,7 @@ function handleGraphicNav(direction) {
 
 // Periodic Gateway Health Check
 async function checkGatewayHealth() {
+  if (state.settingsOpen) return; // do not redraw the form while it is being edited
   try {
     const res = await getGatewayStatus(state.live.pipelineId);
     state.gatewayStatus = res.isSimulated ? "simulated" : "online";
@@ -508,6 +520,30 @@ checkGatewayHealth();
 // HTML Rendering Functions
 // -------------------------------------------------------------
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function renderSettings() {
+  if (!state.settingsOpen) return "";
+  return `
+    <form class="settings-form" id="settings-form">
+      <label>Gateway address (https)
+        <input type="url" id="settings-url" value="${escapeHtml(CONFIG.gatewayUrl)}" required autocomplete="off" />
+      </label>
+      <label>Access key
+        <input type="password" id="settings-key" value="${escapeHtml(CONFIG.gatewayApiKey)}" autocomplete="off" />
+      </label>
+      ${state.settingsError ? `<div class="settings-error">${escapeHtml(state.settingsError)}</div>` : ""}
+      <div class="settings-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" id="settings-reset">Use built-in defaults</button>
+        <button type="button" class="btn btn-secondary" id="settings-close">Close</button>
+      </div>
+    </form>
+  `;
+}
+
 function renderHeader() {
   const dotClass = state.gatewayStatus === "online" ? "online" : state.gatewayStatus === "simulated" ? "simulated" : "offline";
   const statusText = state.gatewayStatus === "online" ? "Gateway Connected" : state.gatewayStatus === "simulated" ? "Simulated Dev" : "Gateway Offline";
@@ -519,14 +555,16 @@ function renderHeader() {
           <span class="church-badge">Church</span>
           <span>${CONFIG.appName}</span>
         </div>
-        <div class="status-pill" title="Gateway: ${CONFIG.gatewayUrl}">
+        <div class="status-pill" title="Gateway: ${escapeHtml(CONFIG.gatewayUrl)}">
           <span class="status-dot ${dotClass}"></span>
           <span>${statusText}</span>
         </div>
       </div>
       <div class="target-info">
-        Target: <strong>${CONFIG.gatewayUrl}</strong>
+        Target: <strong>${escapeHtml(CONFIG.gatewayUrl)}</strong>
+        <button type="button" class="link-btn" id="btn-settings">Settings</button>
       </div>
+      ${renderSettings()}
       <div class="mode-switcher" style="margin-top: 4px;">
         <button class="mode-btn ${state.appMode === "slides" ? "active" : ""}" data-mode="slides">
           📽 Slide Presentation
@@ -1006,6 +1044,46 @@ function render() {
 }
 
 function attachEventHandlers() {
+  const btnSettings = document.getElementById("btn-settings");
+  if (btnSettings) {
+    btnSettings.addEventListener("click", () => {
+      state.settingsOpen = !state.settingsOpen;
+      state.settingsError = "";
+      render();
+    });
+  }
+  const settingsForm = document.getElementById("settings-form");
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      try {
+        saveRuntimeSettings({
+          gatewayUrl: document.getElementById("settings-url").value,
+          gatewayApiKey: document.getElementById("settings-key").value,
+        });
+        state.settingsOpen = false;
+        state.settingsError = "";
+        state.gatewayStatus = "checking";
+        render();
+        checkGatewayHealth();
+      } catch (err) {
+        state.settingsError = err.message;
+        render();
+      }
+    });
+    document.getElementById("settings-reset")?.addEventListener("click", () => {
+      clearRuntimeSettings();
+      state.settingsOpen = false;
+      state.gatewayStatus = "checking";
+      render();
+      checkGatewayHealth();
+    });
+    document.getElementById("settings-close")?.addEventListener("click", () => {
+      state.settingsOpen = false;
+      render();
+    });
+  }
+
   // App Mode Switcher (Slides vs Graphics)
   document.querySelectorAll(".mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -14,7 +14,7 @@ No separate receiver daemon is needed on the church Pi; Pi Gateway fronts the in
 
 ### 1. Step 1: Push Content (Media Staging)
 * Calls Canva Apps SDK (`@canva/design` `requestExport`) to export current design pages as individual unzipped PNGs.
-* Uploads the slides to Pi Gateway (`POST /api/v1/canva/push`).
+* Sends the page URLs to Pi Gateway (`POST /api/v1/canva/push`), which answers with a task. The app follows it (`GET /api/v1/canva/tasks/{taskId}`) and shows fetching, unpacking, thumbnails and "Ready to present" before it goes on to Step 2.
 * Media is safely staged in Pi Program storage. **Live screens and current matrix video routes remain untouched.**
 
 ### 2. Step 2: Presentation Setup (Pipeline & Matrix Routing)
@@ -45,7 +45,7 @@ No separate receiver daemon is needed on the church Pi; Pi Gateway fronts the in
 
 ## Build-time Configuration
 
-Target host, API key, and plugin branding are baked into the static bundle at build time via environment variables.
+Target host, API key, and plugin branding are defaults baked into the static bundle at build time via environment variables. The gateway address and key can also be set in the app (Settings), kept in the browser. Do not bake a real key into a published bundle. See `docs/launch.md` for the launch checklist.
 
 ### Environment Variables
 

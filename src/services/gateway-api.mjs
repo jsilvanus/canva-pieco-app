@@ -64,7 +64,8 @@ async function apiRequest(path, options = {}) {
       } catch {
         // ignore parse error
       }
-      const message = errData?.message || errData?.error || `HTTP ${response.status} from Gateway`;
+      const nested = errData?.error && typeof errData.error === "object" ? errData.error.message : null;
+      const message = nested || errData?.message || (typeof errData?.error === "string" ? errData.error : null) || `HTTP ${response.status} from Gateway`;
       throw new GatewayError(message, response.status, errData);
     }
 
@@ -88,10 +89,13 @@ const devSimulationState = {
   totalSlides: 1,
   ftb: false,
   picMute: false,
+  tasks: new Map(),
 };
 
 /**
- * Step 1: Push exported slides to Pi Gateway (staged in Pi Program storage).
+ * Step 1: Push exported slides to Pi Gateway. The gateway answers 202 with a task: it downloads
+ * the pages, Pi Program unpacks them and makes step pictures and thumbnails. Follow it with
+ * waitForTask() until `ready`.
  */
 export async function pushContent({ title, pages }) {
   try {
@@ -107,7 +111,7 @@ export async function pushContent({ title, pages }) {
       }),
     });
   } catch (err) {
-    if (CONFIG.isDev) {
+    if (CONFIG.isDev && !(err instanceof GatewayError && err.status >= 400 && err.status < 500)) {
       console.warn("[canva-pieco-app] Gateway unreachable in dev mode - using local simulation:", err.message);
       const presentationId = `pres_${Date.now()}`;
       devSimulationState.currentPresentation = {
@@ -118,15 +122,72 @@ export async function pushContent({ title, pages }) {
       };
       devSimulationState.totalSlides = pages.length;
       devSimulationState.currentSlide = 1;
-      return {
-        success: true,
-        presentationId,
-        title,
-        pageCount: pages.length,
-        isSimulated: true,
-      };
+      const taskId = `sim_${presentationId}`;
+      devSimulationState.tasks.set(taskId, { startedAt: Date.now(), presentationId, title, pageCount: pages.length });
+      return buildSimulatedTask(taskId);
     }
     throw err;
+  }
+}
+
+const SIMULATED_TASK_MS = 3000;
+
+function buildSimulatedTask(taskId) {
+  const sim = devSimulationState.tasks.get(taskId);
+  const fraction = Math.min(1, (Date.now() - sim.startedAt) / SIMULATED_TASK_MS);
+  const total = sim.pageCount;
+  const downloadDone = Math.min(total, Math.floor((fraction / 0.3) * total));
+  const ready = fraction >= 1;
+  const state = ready ? "ready" : fraction < 0.3 ? "downloading" : fraction < 0.5 ? "unpacking" : "preparing";
+  const pictureTotal = total * 2;
+  const pictureDone = fraction < 0.5 ? 0 : Math.min(pictureTotal, Math.floor(((fraction - 0.5) / 0.5) * pictureTotal));
+  return {
+    taskId,
+    presentationId: sim.presentationId,
+    title: sim.title,
+    state,
+    progress: fraction,
+    pageCount: total,
+    downloaded: { done: fraction >= 0.3 ? total : downloadDone, total },
+    pictures: { done: ready ? pictureTotal : pictureDone, total: fraction < 0.5 ? 0 : pictureTotal },
+    saved: fraction >= 0.5,
+    ready,
+    error: null,
+    isSimulated: true,
+  };
+}
+
+/**
+ * Current state of a push task: state (queued, downloading, unpacking, preparing, ready, failed),
+ * progress 0..1, downloaded and pictures {done,total}, saved, ready, error.
+ */
+export async function getTask(taskId) {
+  if (devSimulationState.tasks.has(taskId)) return buildSimulatedTask(taskId);
+  return apiRequest(`/api/v1/canva/tasks/${encodeURIComponent(taskId)}`, { timeoutMs: 5000 });
+}
+
+/**
+ * Polls a task until it is ready (resolves with the task) or failed (rejects). `onUpdate` gets
+ * every poll result. A few failed polls in a row (network hiccup) are tolerated.
+ */
+export async function waitForTask(taskId, { onUpdate, pollMs = 700, timeoutMs = 15 * 60_000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  let misses = 0;
+  for (;;) {
+    let task;
+    try {
+      task = await getTask(taskId);
+      misses = 0;
+    } catch (err) {
+      if ((err instanceof GatewayError && err.status === 404) || ++misses >= 5) throw err;
+      await sleep(pollMs);
+      continue;
+    }
+    if (onUpdate) onUpdate(task);
+    if (task.state === "failed") throw new GatewayError(task.error || "Preparing the slides failed", 500, task);
+    if (task.state === "ready" && task.ready !== false) return task;
+    if (Date.now() > deadline) throw new GatewayError("Preparing the slides took too long", 504, task);
+    await sleep(pollMs);
   }
 }
 
@@ -326,4 +387,22 @@ export async function getGatewayStatus(pipelineId = "pipgm1") {
     }
     throw err;
   }
+}
+
+/** Progress of the gateway task: the first 30 % is the download, the rest Pi Program's unpacking and thumbnails. */
+export function describeTask(task) {
+  const percent = 30 + Math.round(Math.max(0, Math.min(1, task.progress ?? 0)) * 69);
+  const dl = task.downloaded || { done: 0, total: task.pageCount || 0 };
+  const pics = task.pictures || { done: 0, total: 0 };
+  const label =
+    task.state === "ready"
+      ? "Ready to present"
+      : task.state === "downloading" || task.state === "queued"
+        ? `Fetching slides from Canva ${dl.done}/${dl.total}`
+        : task.state === "unpacking"
+          ? "Unpacking slides in Pi Program..."
+          : pics.total > 0
+            ? `Making thumbnails ${pics.done}/${pics.total}`
+            : "Preparing slides...";
+  return { percent: task.state === "ready" ? 100 : percent, label };
 }
