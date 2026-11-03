@@ -92,12 +92,31 @@ const devSimulationState = {
   tasks: new Map(),
 };
 
+const USE_AT_ITEM = /^\d{4}-\d{2}-\d{2}(T\d{2})?$/;
+
+/**
+ * Service date for the gateway (`useAt`): one date (2026-11-08), a date and hour (2026-11-08T10),
+ * a range (2026-11-08/2026-11-09) or several of these separated by commas. Returns null for an
+ * empty field, a string for one item and a list for several. Throws on anything else.
+ */
+export function parseUseAt(text) {
+  const items = String(text ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (items.length === 0) return null;
+  for (const item of items) {
+    const parts = item.split("/");
+    if (parts.length > 2 || !parts.every((p) => USE_AT_ITEM.test(p))) {
+      throw new Error(`"${item}" is not a service date. Use 2026-11-08, 2026-11-08T10 or a range 2026-11-08/2026-11-09.`);
+    }
+  }
+  return items.length === 1 ? items[0] : items;
+}
+
 /**
  * Step 1: Push exported slides to Pi Gateway. The gateway answers 202 with a task: it downloads
  * the pages, Pi Program unpacks them and makes step pictures and thumbnails. Follow it with
  * waitForTask() until `ready`.
  */
-export async function pushContent({ title, pages }) {
+export async function pushContent({ title, pages, useAt = null }) {
   try {
     return await apiRequest("/api/v1/canva/push", {
       method: "POST",
@@ -108,6 +127,7 @@ export async function pushContent({ title, pages }) {
           url: p.url,
           name: p.name,
         })),
+        ...(useAt ? { useAt } : {}),
       }),
     });
   } catch (err) {
@@ -194,7 +214,7 @@ export async function waitForTask(taskId, { onUpdate, pollMs = 700, timeoutMs = 
 /**
  * Step 2: Configure Presentation Pipeline and route to displays.
  */
-export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1 }) {
+export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1, piOutput = null }) {
   try {
     return await apiRequest("/api/v1/canva/setup", {
       method: "POST",
@@ -204,6 +224,7 @@ export async function setupPresentation({ presentationId, pipelineId, matrixRout
         matrixRoute,
         unblankProjectors,
         cueSlide,
+        ...(piOutput ? { piOutput } : {}),
       }),
     });
   } catch (err) {

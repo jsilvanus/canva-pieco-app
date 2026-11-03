@@ -10,6 +10,9 @@ The app only does something with a Pi Gateway that the browser in Canva can reac
 
 - Build: `pnpm install && pnpm run build`, bundle in `dist/`. CI runs `pnpm run check` and `pnpm test`.
 - The production build does **not** simulate. Earlier, `isDev` was true in production builds, so a failed push could have been shown as a success from the local simulation. Simulation now runs only under `vite` (dev server) and under tests.
+- Service date (`useAt`) on Step 1: one date, a date and hour, a range, or several dates separated by commas. Sent on `POST /api/v1/canva/push`; empty sends nothing.
+- Pi output (`piOutput`) on Step 2: Pi 1 (Atlona input 3) or Pi 2 (Atlona input 4), sent on `POST /api/v1/canva/setup`; the default "Gateway default" sends nothing.
+- Gateway address in the build: `https://kehitys.riihimaenseurakunta.fi/canva` (`.env.example`). The key is sent as `Authorization: Bearer` and is never in the repository or the bundle.
 - Progress while pushing: the gateway returns a task id; the app shows fetching slides from Canva, unpacking, thumbnails (done/total) and "Ready to present", and only goes to Step 2 when the slides are ready. A failed task shows the gateway's reason.
 - Settings (link under the title): gateway address (https only, or http on localhost) and access key, kept in this browser's localStorage. Build-time `VITE_GATEWAY_URL` / `VITE_GATEWAY_API_KEY` are only defaults.
 - **Do not put a real key in a published bundle.** Anything built into the bundle can be read by everybody who can open the app. Build without `VITE_GATEWAY_API_KEY` and let each operator enter the key in Settings.
@@ -17,7 +20,7 @@ The app only does something with a Pi Gateway that the browser in Canva can reac
 ## For the portal owner (not done)
 
 1. Create the app in the [Developer Portal](https://www.canva.com/developers/) (type: Canva App), set the app name and icon.
-2. Add the https origin of the gateway to the app's allowed/connect origins (the portal's field for network access). The gateway must also list Canva's origins in `PIGATEWAY_CORS_ORIGINS`.
+2. Add the https origin of the gateway to the app's allowed/connect origins (the portal's field for network access): `https://kehitys.riihimaenseurakunta.fi`. On the Pi, the Canva-only listener (`PIGATEWAY_CANVA_TUNNEL_PORT`, 3010) must list the Canva app's origin from the portal in `PIGATEWAY_CANVA_TUNNEL_CORS_ORIGINS`. That origin is still open: the church has to give it.
 3. Put the production bundle's URL (or upload the bundle) as the portal asks.
 4. Check which permissions the portal needs for design export (`requestExport`); the code only uses the export call and the gateway.
 5. Privacy policy and support contact: the app sends the exported slide images (as short-lived Canva links that the gateway downloads) and the access key to the church's own gateway; it stores the gateway address and key in the browser. Nothing is sent anywhere else. A policy text and a support address have to come from the church; none is written here.
@@ -26,7 +29,7 @@ The app only does something with a Pi Gateway that the browser in Canva can reac
 
 ## Gateway side (before the first real service)
 
-- The gateway needs a trusted https certificate and a name the operator's browser can reach (see the thread about putting the VPS Traefik in front of the Pi gateway; not built).
+- Reachable now (since 2026-11-03): `https://kehitys.riihimaenseurakunta.fi/canva/api/v1/...`. Traefik on the church VPS terminates TLS and forwards through the radio tunnel to pigateway's Canva-only listener. Without the key the status route answers 401.
 - pigateway with the Canva routes (pigateway #20) and piprogram with export packages (merged) must be deployed from main.
 - Projector picture mute (`Key M`, "Pic Mute") is **not** wired in the gateway yet: the button reports an error. `unblankProjectors` is reported as a warning.
 - The Atlona mapping used by Step 2 is an assumption: PiPGM1 on input 3, PiPGM2 on input 4; Both projectors = outputs 1 and 2, Landscape screen = output 3, All displays = 1 to 4. Check on site.
