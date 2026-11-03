@@ -17,7 +17,7 @@ There is no separate receiver daemon running on the Pi; Pi Gateway exposes scope
 * The plugin triggers Canva Apps SDK (`@canva/design` `requestExport`) with uncompressed PNG export (`zipped: "never"`).
 * The plugin sends the export URLs and titles to Pi Gateway:
   `POST /api/v1/canva/push`
-* Pi Gateway fetches the assets and stores them as media items in Pi Program.
+* Pi Gateway answers 202 with a task, fetches the assets and has Pi Program keep them and make thumbnails. The plugin polls `GET /api/v1/canva/tasks/{taskId}` until `ready` and shows the progress.
 * Staging content does not affect live displays or active playback.
 
 ### 2. Step 2: Presentation Setup
