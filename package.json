@@ -13,7 +13,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "vite build",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "build:js": "VITE_GATEWAY_API_KEY= vite build -c vite.js-only.config.mjs"
   },
   "dependencies": {
     "@canva/design": "^2.14.0",
