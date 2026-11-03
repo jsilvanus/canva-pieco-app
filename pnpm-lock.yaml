@@ -14,6 +14,9 @@ importers:
       '@canva/platform':
         specifier: ^2.2.3
         version: 2.2.3(@canva/error@2.2.2)
+      '@canva/user':
+        specifier: ^2.3.0
+        version: 2.3.0(@canva/error@2.2.2)
     devDependencies:
       vite:
         specifier: ^6.2.0
@@ -31,6 +34,11 @@ packages:
 
   '@canva/platform@2.2.3':
     resolution: {integrity: sha512-qDvj7YKOYWDzxWyTyCjCZqpbvAUurdFNHyUqihDMaD9g6y3gXypssdfuYYIyOAaxtpGi8yDywcsbeyx1xj7O7g==}
+    peerDependencies:
+      '@canva/error': ^2.0.0
+
+  '@canva/user@2.3.0':
+    resolution: {integrity: sha512-ZwqnTTitaUCs3UfZK/ns6JvQoJye0Tw5xrYbLFdzw49ESweV7CYhl7xZW66U1+SzyzW+As8o0/rq7jB1fxmu7Q==}
     peerDependencies:
       '@canva/error': ^2.0.0
 
@@ -440,6 +448,10 @@ snapshots:
   '@canva/error@2.2.2': {}
 
   '@canva/platform@2.2.3(@canva/error@2.2.2)':
+    dependencies:
+      '@canva/error': 2.2.2
+
+  '@canva/user@2.3.0(@canva/error@2.2.2)':
     dependencies:
       '@canva/error': 2.2.2
 
