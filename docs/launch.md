@@ -12,7 +12,9 @@ The app only does something with a Pi Gateway that the browser in Canva can reac
 - The production build does **not** simulate. Earlier, `isDev` was true in production builds, so a failed push could have been shown as a success from the local simulation. Simulation now runs only under `vite` (dev server) and under tests.
 - Service date (`useAt`) on Step 1: one date, a date and hour, a range, or several dates separated by commas. Sent on `POST /api/v1/canva/push`; empty sends nothing.
 - Pi output (`piOutput`) on Step 2: Pi 1 (Atlona input 3) or Pi 2 (Atlona input 4), sent on `POST /api/v1/canva/setup`; the default "Gateway default" sends nothing.
-- Gateway address in the build: `https://kehitys.riihimaenseurakunta.fi/canva` (`.env.example`). The key is sent as `Authorization: Bearer` and is never in the repository or the bundle.
+- Gateway address in the build: `https://kehitys.riihimaenseurakunta.fi/canva` (`.env.example`).
+- Auth (team scope): inside Canva the app sends the Canva user token (`auth.getCanvaUserToken()` from `@canva/user`) as `Authorization: Bearer`. pigateway's Canva listener verifies it against Canva's JWKS for the app and accepts only the teams in `PIGATEWAY_CANVA_ALLOWED_BRANDS`. No key is shipped in the bundle. The Settings key is only a fallback outside Canva.
+- Needs on the gateway: `PIGATEWAY_CANVA_APP_ID` (the app id from the Developer Portal) and `PIGATEWAY_CANVA_ALLOWED_BRANDS` (the church team id). See pigateway `docs/canva-listener.md`.
 - Progress while pushing: the gateway returns a task id; the app shows fetching slides from Canva, unpacking, thumbnails (done/total) and "Ready to present", and only goes to Step 2 when the slides are ready. A failed task shows the gateway's reason.
 - Settings (link under the title): gateway address (https only, or http on localhost) and access key, kept in this browser's localStorage. Build-time `VITE_GATEWAY_URL` / `VITE_GATEWAY_API_KEY` are only defaults.
 - **Do not put a real key in a published bundle.** Anything built into the bundle can be read by everybody who can open the app. Build without `VITE_GATEWAY_API_KEY` and let each operator enter the key in Settings.

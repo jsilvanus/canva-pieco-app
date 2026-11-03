@@ -23,14 +23,32 @@ export function resetFetchImpl() {
 }
 
 /**
- * Standard headers for Pi Gateway requests.
+ * The Canva user token of the person using the app (inside Canva only). The gateway checks it and
+ * allows the user's team, so no shared key is needed in Canva. Outside Canva there is none.
  */
-function getHeaders() {
+async function canvaUserToken() {
+  try {
+    const { auth } = await import("@canva/user");
+    const token = await auth.getCanvaUserToken();
+    return typeof token === "string" && token ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Standard headers for Pi Gateway requests: the Canva user token when there is one, otherwise the
+ * key from Settings or the build (outside Canva, e.g. a browser test).
+ */
+async function getHeaders() {
   const headers = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (CONFIG.gatewayApiKey) {
+  const userToken = await canvaUserToken();
+  if (userToken) {
+    headers["Authorization"] = `Bearer ${userToken}`;
+  } else if (CONFIG.gatewayApiKey) {
     headers["Authorization"] = `Bearer ${CONFIG.gatewayApiKey}`;
     headers["X-Api-Key"] = CONFIG.gatewayApiKey;
   }
@@ -50,7 +68,7 @@ async function apiRequest(path, options = {}) {
     const response = await fetchFn(url, {
       ...options,
       headers: {
-        ...getHeaders(),
+        ...(await getHeaders()),
         ...(options.headers || {}),
       },
       signal: controller.signal,
