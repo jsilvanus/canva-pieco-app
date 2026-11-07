@@ -52,7 +52,7 @@ Target host, API key, and plugin branding are defaults baked into the static bun
 | Variable | Description | Default | Example |
 | :--- | :--- | :--- | :--- |
 | `VITE_APP_NAME` | Plugin display title shown in Canva | `Church Slide Bridge` | `"Keskuskirkko Slide Bridge"` |
-| `VITE_GATEWAY_URL` | Base HTTPS URL of Pi Gateway | `https://gateway.local:8443` | `"https://gateway.keskuskirkko.fi:8443"` |
+| `VITE_GATEWAY_URL` | Base HTTPS URL of Pi Gateway | `https://gateway.local:8443` | `"https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443"` |
 | `VITE_GATEWAY_API_KEY`| Scoped API Token for Pi Gateway | `""` | `"secret-canva-api-key"` |
 
 See `.env.example` for reference.
@@ -64,7 +64,7 @@ To build a custom bundle for a specific church:
 ```bash
 # Example for Keskuskirkko
 VITE_APP_NAME="Keskuskirkko Slide Bridge" \
-VITE_GATEWAY_URL="https://gateway.keskuskirkko.fi:8443" \
+VITE_GATEWAY_URL="https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443" \
 VITE_GATEWAY_API_KEY="church-token-xyz" \
 pnpm run build
 ```
@@ -113,3 +113,13 @@ Because Canva apps run in a sandboxed iframe on Canva domains:
    * `POST /api/v1/canva/control`: All live controls (`next`, `prev`, `gotoPage`, `ftb`, `picMute`).
    * `GET  /api/v1/canva/status`: Pipeline and projector status.
 4. See `openapi/openapi.yaml` for the complete API contract.
+
+---
+
+## Pi Ecosystem Integration & Status Updates
+
+This project is an integral component of the [Pi Production Ecosystem](file:///d:/piecosystem).
+
+> [!IMPORTANT]
+> Any changes to this repository's architectural role, API routes, communication protocols, exposed ports, dependencies, or runtime status **must be documented in the central `piecosystem` coordination repository** (`docs/projects-catalog.md` and `docs/inter-service-matrix.md`).
+> Always verify cross-system health with `npm run status` in `D:\piecosystem`.
