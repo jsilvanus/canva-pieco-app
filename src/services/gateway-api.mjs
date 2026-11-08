@@ -23,14 +23,32 @@ export function resetFetchImpl() {
 }
 
 /**
- * Standard headers for Pi Gateway requests.
+ * The Canva user token of the person using the app (inside Canva only). The gateway checks it and
+ * allows the user's team, so no shared key is needed in Canva. Outside Canva there is none.
  */
-function getHeaders() {
+async function canvaUserToken() {
+  try {
+    const { auth } = await import("@canva/user");
+    const token = await auth.getCanvaUserToken();
+    return typeof token === "string" && token ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Standard headers for Pi Gateway requests: the Canva user token when there is one, otherwise the
+ * key from Settings or the build (outside Canva, e.g. a browser test).
+ */
+async function getHeaders() {
   const headers = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (CONFIG.gatewayApiKey) {
+  const userToken = await canvaUserToken();
+  if (userToken) {
+    headers["Authorization"] = `Bearer ${userToken}`;
+  } else if (CONFIG.gatewayApiKey) {
     headers["Authorization"] = `Bearer ${CONFIG.gatewayApiKey}`;
     headers["X-Api-Key"] = CONFIG.gatewayApiKey;
   }
@@ -50,7 +68,7 @@ async function apiRequest(path, options = {}) {
     const response = await fetchFn(url, {
       ...options,
       headers: {
-        ...getHeaders(),
+        ...(await getHeaders()),
         ...(options.headers || {}),
       },
       signal: controller.signal,
@@ -92,12 +110,31 @@ const devSimulationState = {
   tasks: new Map(),
 };
 
+const USE_AT_ITEM = /^\d{4}-\d{2}-\d{2}(T\d{2})?$/;
+
+/**
+ * Service date for the gateway (`useAt`): one date (2026-11-08), a date and hour (2026-11-08T10),
+ * a range (2026-11-08/2026-11-09) or several of these separated by commas. Returns null for an
+ * empty field, a string for one item and a list for several. Throws on anything else.
+ */
+export function parseUseAt(text) {
+  const items = String(text ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (items.length === 0) return null;
+  for (const item of items) {
+    const parts = item.split("/");
+    if (parts.length > 2 || !parts.every((p) => USE_AT_ITEM.test(p))) {
+      throw new Error(`"${item}" is not a service date. Use 2026-11-08, 2026-11-08T10 or a range 2026-11-08/2026-11-09.`);
+    }
+  }
+  return items.length === 1 ? items[0] : items;
+}
+
 /**
  * Step 1: Push exported slides to Pi Gateway. The gateway answers 202 with a task: it downloads
  * the pages, Pi Program unpacks them and makes step pictures and thumbnails. Follow it with
  * waitForTask() until `ready`.
  */
-export async function pushContent({ title, pages }) {
+export async function pushContent({ title, pages, useAt = null }) {
   try {
     return await apiRequest("/api/v1/canva/push", {
       method: "POST",
@@ -108,6 +145,7 @@ export async function pushContent({ title, pages }) {
           url: p.url,
           name: p.name,
         })),
+        ...(useAt ? { useAt } : {}),
       }),
     });
   } catch (err) {
@@ -194,7 +232,7 @@ export async function waitForTask(taskId, { onUpdate, pollMs = 700, timeoutMs = 
 /**
  * Step 2: Configure Presentation Pipeline and route to displays.
  */
-export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1 }) {
+export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1, piOutput = null }) {
   try {
     return await apiRequest("/api/v1/canva/setup", {
       method: "POST",
@@ -204,6 +242,7 @@ export async function setupPresentation({ presentationId, pipelineId, matrixRout
         matrixRoute,
         unblankProjectors,
         cueSlide,
+        ...(piOutput ? { piOutput } : {}),
       }),
     });
   } catch (err) {
