@@ -780,7 +780,7 @@ function renderStepTabs() {
       <button class="step-tab ${state.currentStep === 2 ? "active" : ""}" ${!state.staged.presentationId ? "disabled" : ""} data-step="2">
         <span>2. Setup</span>
       </button>
-      <button class="step-tab ${state.currentStep === 3 ? "active" : ""}" ${state.live.totalSlides <= 1 && !state.staged.presentationId ? "disabled" : ""} data-step="3">
+      <button class="step-tab ${state.currentStep === 3 ? "active" : ""}" ${!state.staged.presentationId ? "disabled" : ""} data-step="3">
         <span>3. Live</span>
       </button>
     </nav>
