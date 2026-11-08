@@ -4,6 +4,7 @@ import { CONFIG } from "../src/config.mjs";
 import { isRunningInCanva, exportDesignPages } from "../src/services/canva-sdk.mjs";
 import {
   pushContent,
+  parseUseAt,
   waitForTask,
   describeTask,
   setupPresentation,
@@ -306,4 +307,31 @@ test("saved settings win over the build defaults and can be cleared", async () =
   } finally {
     delete globalThis.localStorage;
   }
+});
+
+test("parseUseAt accepts a date, a date with hour, a range and a list", () => {
+  assert.equal(parseUseAt(""), null);
+  assert.equal(parseUseAt("2026-11-08"), "2026-11-08");
+  assert.equal(parseUseAt("2026-11-08T10"), "2026-11-08T10");
+  assert.equal(parseUseAt("2026-11-08/2026-11-09"), "2026-11-08/2026-11-09");
+  assert.deepEqual(parseUseAt("2026-11-08, 2026-11-15"), ["2026-11-08", "2026-11-15"]);
+  assert.throws(() => parseUseAt("8.11.2026"), /not a service date/);
+});
+
+test("pushContent sends useAt, setupPresentation sends piOutput only when set", async () => {
+  const bodies = [];
+  setFetchImpl(async (url, init = {}) => {
+    bodies.push({ path: new URL(url).pathname, body: JSON.parse(init.body) });
+    return new Response(
+      JSON.stringify({ taskId: "t", presentationId: "p", state: "queued", ready: false, success: true }),
+      { status: 202, headers: { "Content-Type": "application/json" } }
+    );
+  });
+  await pushContent({ title: "A", pages: [{ pageNumber: 1, url: "x" }], useAt: ["2026-11-08", "2026-11-15"] });
+  await setupPresentation({ presentationId: "p", pipelineId: "pipgm1", matrixRoute: "none" });
+  await setupPresentation({ presentationId: "p", pipelineId: "pipgm1", matrixRoute: "none", piOutput: "pi2" });
+  assert.equal(bodies[0].path, "/api/v1/canva/push");
+  assert.deepEqual(bodies[0].body.useAt, ["2026-11-08", "2026-11-15"]);
+  assert.equal("piOutput" in bodies[1].body, false);
+  assert.equal(bodies[2].body.piOutput, "pi2");
 });

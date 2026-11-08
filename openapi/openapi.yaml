@@ -35,6 +35,16 @@ paths:
                 title:
                   type: string
                   example: Sunday Service 2026-11-01
+                useAt:
+                  description: >-
+                    Service date: one date (2026-11-08), a date and hour (2026-11-08T10),
+                    a range (2026-11-08/2026-11-09) or a list of these. Omit when there is no date.
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        type: string
+                  example: 2026-11-08
                 pages:
                   type: array
                   items:
@@ -119,6 +129,11 @@ paths:
                   type: integer
                   default: 1
                   example: 1
+                piOutput:
+                  type: string
+                  enum: [pi1, pi2]
+                  description: Pi Program output (Atlona input 3 or 4). Omit for the gateway default.
+                  example: pi1
       responses:
         "200":
           description: Pipeline configured and routed live

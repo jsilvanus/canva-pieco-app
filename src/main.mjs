@@ -2,6 +2,7 @@ import { CONFIG, saveRuntimeSettings, clearRuntimeSettings } from "./config.mjs"
 import { exportDesignPages, isRunningInCanva } from "./services/canva-sdk.mjs";
 import {
   pushContent,
+  parseUseAt,
   waitForTask,
   describeTask,
   setupPresentation,
@@ -55,8 +56,12 @@ const state = {
     pages: [],
   },
 
+  // Service date for the staged content (sent as useAt on push), empty = none
+  serviceDate: "",
+
   // Presentation setup configuration for Step 2
   setup: {
+    piOutput: "", // "" = gateway default, "pi1" | "pi2"
     pipelineId: "pipgm1",
     matrixRoute: "both_projectors",
     unblankProjectors: true,
@@ -134,6 +139,14 @@ function renderProgressBar() {
 async function handlePushContent() {
   if (state.isExporting || state.isPushing) return;
 
+  let useAt = null;
+  try {
+    useAt = parseUseAt(state.serviceDate);
+  } catch (err) {
+    showToast(err.message, "error");
+    return;
+  }
+
   try {
     state.isExporting = true;
     setProgress(15, "Exporting slides from Canva...");
@@ -163,6 +176,7 @@ async function handlePushContent() {
     const task = await pushContent({
       title: exportResult.title || "Canva Slides",
       pages: exportResult.exportBlobs,
+      useAt,
     });
     showTaskProgress(task);
 
@@ -208,6 +222,7 @@ async function handleApplySetup() {
       matrixRoute: state.setup.matrixRoute,
       unblankProjectors: state.setup.unblankProjectors,
       cueSlide: state.setup.cueSlide,
+      piOutput: state.setup.piOutput || null,
     });
 
     state.isSettingUp = false;
@@ -827,6 +842,11 @@ function renderStep1View() {
       <div class="card-subtitle">
         Export slides from your active Canva design directly into Pi Program church storage. Pushing saves your content safely without changing live screens.
       </div>
+      <div class="form-group">
+        <label class="form-label" for="input-service-date">Service date (optional)</label>
+        <input type="text" class="select-input" id="input-service-date" value="${escapeHtml(state.serviceDate)}" placeholder="2026-11-08 or 2026-11-08T10" autocomplete="off" />
+        <div class="checkbox-hint">Empty = no date. Several dates separated by commas; a range as 2026-11-08/2026-11-09.</div>
+      </div>
       <button class="btn-primary" id="btn-push" ${isBusy ? "disabled" : ""}>
         ${btnText}
       </button>
@@ -887,6 +907,15 @@ function renderStep2View() {
           <option value="landscape_screen" ${state.setup.matrixRoute === "landscape_screen" ? "selected" : ""}>Landscape Screen (Side Wall)</option>
           <option value="all_displays" ${state.setup.matrixRoute === "all_displays" ? "selected" : ""}>All Church Displays</option>
           <option value="none" ${state.setup.matrixRoute === "none" ? "selected" : ""}>Keep Existing Matrix Routing</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="select-pi-output">Pi Output (Atlona input)</label>
+        <select class="select-input" id="select-pi-output">
+          <option value="" ${!state.setup.piOutput ? "selected" : ""}>Gateway default</option>
+          <option value="pi1" ${state.setup.piOutput === "pi1" ? "selected" : ""}>Pi 1 (Atlona input 3)</option>
+          <option value="pi2" ${state.setup.piOutput === "pi2" ? "selected" : ""}>Pi 2 (Atlona input 4)</option>
         </select>
       </div>
 
@@ -1198,6 +1227,20 @@ function attachEventHandlers() {
   if (selectMatrix) {
     selectMatrix.addEventListener("change", (e) => {
       state.setup.matrixRoute = e.target.value;
+    });
+  }
+
+  const inputServiceDate = document.getElementById("input-service-date");
+  if (inputServiceDate) {
+    inputServiceDate.addEventListener("input", (e) => {
+      state.serviceDate = e.target.value;
+    });
+  }
+
+  const selectPiOutput = document.getElementById("select-pi-output");
+  if (selectPiOutput) {
+    selectPiOutput.addEventListener("change", (e) => {
+      state.setup.piOutput = e.target.value;
     });
   }
 
