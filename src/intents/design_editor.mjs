@@ -7,6 +7,7 @@ export default {
       app.id = "app";
       (document.getElementById("root") || document.body).append(app);
     }
-    await import("../main.mjs");
+    const { mount } = await import("../main.mjs");
+    mount();
   },
 };
