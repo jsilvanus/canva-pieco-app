@@ -134,7 +134,7 @@ export function parseUseAt(text) {
  * the pages, Pi Program unpacks them and makes step pictures and thumbnails. Follow it with
  * waitForTask() until `ready`.
  */
-export async function pushContent({ title, pages, useAt = null }) {
+export async function pushContent({ title, pages, useAt = null, target = null }) {
   try {
     return await apiRequest("/api/v1/canva/push", {
       method: "POST",
@@ -146,6 +146,7 @@ export async function pushContent({ title, pages, useAt = null }) {
           name: p.name,
         })),
         ...(useAt ? { useAt } : {}),
+        ...(target ? { target } : {}),
       }),
     });
   } catch (err) {
