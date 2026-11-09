@@ -1,7 +1,8 @@
-// Single-file entry for the Canva upload: injects the stylesheet and registers both intents.
+// Single-file entry for the Canva upload: injects the UI kit stylesheet and registers both intents.
 import { prepareContentPublisher } from "@canva/intents/content";
 import { prepareDesignEditor } from "@canva/intents/design";
-import css from "./styles.css?inline";
+// Canva's UI kit styles; Canva apps are left-to-right in every locale we serve.
+import css from "@canva/app-ui-kit/styles.ltr.css?inline";
 import contentPublisher from "./intents/content_publisher.mjs";
 import designEditor from "./intents/design_editor.mjs";
 

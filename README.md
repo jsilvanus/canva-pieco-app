@@ -26,10 +26,10 @@ No separate receiver daemon is needed on the church Pi; Pi Gateway fronts the in
   * *Keep Current Route*
 * **Projector Shutter Option**: Checkbox to automatically unblank projector beams (`Turn OFF Pic Mute`) on live activation.
 * **Cue Slide 1**: Pre-stages the first slide on the pipeline stage.
-* Action button **🚀 Apply Pipeline & Go Live** arms the presentation and switches matrix routes.
+* Action button **Set up and go live** arms the presentation and switches matrix routes.
 
 ### 3. Step 3: Live Presentation Controls
-* **Big Tactile Navigation**: Prominent `◀ PREVIOUS` and `NEXT ▶` buttons with large touch targets.
+* **Navigation**: **Previous** and **Next** buttons.
 * **Keyboard Hotkeys**:
   * `Right Arrow` / `Space` / `PageDown`: Next Slide
   * `Left Arrow` / `PageUp`: Previous Slide
@@ -40,6 +40,19 @@ No separate receiver daemon is needed on the church Pi; Pi Gateway fronts the in
   * **Fade to Black (FTB)**: Pi Program output slide blanking.
   * **Projector Pic Mute**: Physical hardware beam shutter control (blank/unblank projector lamp output).
   * **Restart (Slide 1)**: Quick reset to beginning.
+
+---
+
+## UI
+
+The panel is built the way Canva expects apps to be built:
+
+* **React** with Canva's **App UI Kit** (`@canva/app-ui-kit`): `AppUiProvider`, `Rows`, `Columns`, `Button`, `FormField`, `Select`, `Tabs`, `Switch`, `ImageCard`, `ProgressBar`, `Alert`. Canva's theme and styles, no custom CSS.
+* **Localization** with `@canva/app-i18n-kit` (`AppI18nProvider`) and `react-intl`. Every user-facing string is a message with a `description`; `babel-plugin-formatjs` gives each one the content-hash id Canva's translation tooling uses.
+* **Linting** with `@canva/app-eslint-plugin` (`apps` config) and TypeScript (`pnpm run lint`, `pnpm run typecheck`; both run in `pnpm run check`).
+* **Intents**: `src/canva-entry.mjs` registers Design Editor (this panel) and Content Publisher. The upload is one classic-script file (`pnpm run build:js` → `dist-js/canva-pieco-app.js`).
+
+UI code is in `src/app/` (TSX); the gateway, SDK and config services stay in plain JS with type declarations next to them.
 
 ---
 
@@ -82,7 +95,7 @@ pnpm run dev
 ```
 Runs at `http://localhost:3100`.
 
-* When opened in a standard browser (outside Canva), `canva-pieco-app` detects this and automatically enables **Dev Mock Mode** with simulated slide exports and local state simulation, allowing full testing of the 3-step workflow without an active Canva session or live Pi Gateway.
+* When opened in a standard browser (outside Canva), `canva-pieco-app` detects this and automatically enables **Dev Mock Mode** with simulated slide exports. `src/dev.tsx` renders the panel with Canva's test providers (`TestAppUiProvider`, `TestAppI18nProvider`), which are for local testing only.
 
 ### Tests
 ```bash
