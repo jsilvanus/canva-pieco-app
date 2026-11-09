@@ -87,14 +87,18 @@ export function decodePublishRef(publishRef) {
 
 /**
  * The body for the gateway push. `useAt` uses the same date syntax as the gateway's parseUseAt
- * (a single date or "YYYY-MM-DD/YYYY-MM-DD" range), `target` says where the slides go.
+ * (a single date or "YYYY-MM-DD/YYYY-MM-DD" range), `target` says where the slides go, and
+ * `orientation` is the gateway's word for it ("landscape" or "portrait"), so Pi Program only makes
+ * the export package for that orientation.
  */
 export function buildPushPayload(settings, pages) {
   const from = settings.usage.from;
   const to = settings.usage.to ?? from;
+  const target = targetById(settings.targetId);
   return {
     title: settings.name.trim(),
     target: settings.targetId,
+    ...(target ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
     useAt: from === to ? from : `${from}/${to}`,
     pages,
   };

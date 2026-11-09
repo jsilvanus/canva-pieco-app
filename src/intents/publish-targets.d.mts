@@ -24,4 +24,4 @@ export function decodePublishRef(publishRef: string | undefined): PublishSetting
 export function buildPushPayload(
   settings: PublishSettingsData,
   pages: { url: string; pageNumber: number; name?: string }[],
-): { title: string; target: string; useAt: string; pages: { url: string; pageNumber: number; name?: string }[] };
+): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt: string; pages: { url: string; pageNumber: number; name?: string }[] };
