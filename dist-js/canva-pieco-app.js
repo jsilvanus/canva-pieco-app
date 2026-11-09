@@ -1,5 +1,21 @@
-const le = ':root{--bg-primary: #0f172a;--bg-secondary: #1e293b;--bg-card: #334155;--bg-active: #2563eb;--text-primary: #f8fafc;--text-muted: #94a3b8;--text-dim: #64748b;--border-color: #334155;--border-highlight: #475569;--accent-blue: #3b82f6;--accent-cyan: #06b6d4;--accent-green: #10b981;--accent-amber: #f59e0b;--accent-red: #ef4444;--radius-sm: 6px;--radius-md: 10px;--radius-lg: 14px;--font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif}*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font-main);background-color:var(--bg-primary);color:var(--text-primary);font-size:13px;line-height:1.4;user-select:none;-webkit-font-smoothing:antialiased;padding:12px;min-height:100vh}#app{display:flex;flex-direction:column;gap:12px;max-width:420px;margin:0 auto}.app-header{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border-color);padding-bottom:10px}.header-top{display:flex;justify-content:space-between;align-items:center}.brand-title{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px}.church-badge{background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));color:#fff;padding:2px 7px;border-radius:var(--radius-sm);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}.status-pill{display:flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;background-color:var(--bg-secondary);color:var(--text-muted)}.status-dot{width:7px;height:7px;border-radius:50%;background-color:var(--text-dim)}.status-dot.online{background-color:var(--accent-green);box-shadow:0 0 6px var(--accent-green)}.status-dot.simulated{background-color:var(--accent-amber)}.status-dot.offline{background-color:var(--accent-red)}.target-info{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mode-switcher{display:flex;background-color:var(--bg-secondary);border-radius:var(--radius-sm);padding:3px;gap:4px}.mode-btn{flex:1;background:transparent;border:none;color:var(--text-muted);padding:6px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center;gap:5px}.mode-btn.active{background-color:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 3px #0000004d}.mode-btn:hover:not(.active){color:var(--text-primary)}.step-nav{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background-color:var(--bg-secondary);padding:3px;border-radius:var(--radius-md)}.step-tab{background:transparent;border:none;color:var(--text-muted);font-size:11px;font-weight:600;padding:7px 4px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .2s ease}.step-tab:hover:not(:disabled){color:var(--text-primary);background-color:var(--bg-card)}.step-tab.active{background-color:var(--bg-active);color:#fff}.step-tab:disabled{opacity:.4;cursor:not-allowed}.view-card{background-color:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:12px}.card-title{font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;justify-content:space-between}.card-subtitle{font-size:12px;color:var(--text-muted);line-height:1.4}.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;font-weight:600;font-size:13px;padding:10px 14px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s ease,filter .2s ease;box-shadow:0 2px 8px #2563eb4d}.btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}.btn-primary:active:not(:disabled){transform:translateY(0)}.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}.btn-secondary{background-color:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-highlight);font-weight:600;font-size:12px;padding:8px 12px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s ease}.btn-secondary:hover:not(:disabled){background-color:var(--border-highlight)}.btn-secondary:disabled{opacity:.4;cursor:not-allowed}.export-meta{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;flex-direction:column;gap:6px}.meta-row{display:flex;justify-content:space-between;font-size:11px}.meta-label{color:var(--text-dim)}.meta-value{color:var(--text-primary);font-weight:600}.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:180px;overflow-y:auto;padding:4px;background-color:var(--bg-primary);border-radius:var(--radius-md)}.preview-item{position:relative;aspect-ratio:16 / 9;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-color);background-color:#000}.preview-item img{width:100%;height:100%;object-fit:cover}.preview-badge{position:absolute;bottom:2px;right:2px;background:#000000bf;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px}.form-group{display:flex;flex-direction:column;gap:6px}.form-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}.radio-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}.radio-tile{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:all .2s ease}.radio-tile:hover{border-color:var(--accent-blue)}.radio-tile.selected{border-color:var(--accent-blue);background-color:#2563eb26}.tile-title{font-size:12px;font-weight:700;color:var(--text-primary)}.tile-desc{font-size:10px;color:var(--text-dim)}.select-input{background-color:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 10px;font-size:12px;outline:none;width:100%;cursor:pointer}.select-input:focus{border-color:var(--accent-blue)}.checkbox-row{display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:6px 0}.checkbox-row input{margin-top:2px;accent-color:var(--accent-blue);cursor:pointer}.checkbox-label{font-size:12px;color:var(--text-primary);font-weight:500}.checkbox-hint{font-size:10px;color:var(--text-dim)}.live-banner{background:linear-gradient(135deg,#ef444433,#2563eb33);border:1px solid var(--accent-red);border-radius:var(--radius-md);padding:8px 12px;display:flex;align-items:center;justify-content:space-between}.live-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--accent-red);letter-spacing:.5px}.live-pulse{width:8px;height:8px;border-radius:50%;background-color:var(--accent-red);animation:pulse 1.5s infinite}@keyframes pulse{0%{transform:scale(.9);opacity:.8}50%{transform:scale(1.3);opacity:1}to{transform:scale(.9);opacity:.8}}.live-routing-badge{font-size:11px;font-weight:600;color:var(--text-muted)}.slide-display-box{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden}.slide-number-big{font-size:32px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}.slide-count-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}.slide-title-preview{font-size:13px;color:var(--accent-cyan);font-weight:600;text-align:center;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav-buttons-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn-nav{height:60px;font-size:15px;font-weight:800;border-radius:var(--radius-lg);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s ease}.btn-nav-prev{background-color:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-highlight)}.btn-nav-prev:hover:not(:disabled){background-color:var(--border-highlight)}.btn-nav-next{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 12px #10b98159}.btn-nav-next:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-2px)}.btn-nav:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}.nav-key-hint{font-size:9px;opacity:.7;font-weight:500}.thumbnails-strip{display:flex;gap:6px;overflow-x:auto;padding:6px 2px;scrollbar-width:thin}.thumb-card{flex:0 0 64px;aspect-ratio:16 / 9;background-color:var(--bg-primary);border:2px solid var(--border-color);border-radius:var(--radius-sm);cursor:pointer;position:relative;overflow:hidden;transition:all .15s ease}.thumb-card:hover{border-color:var(--text-muted)}.thumb-card.active{border-color:var(--accent-blue);box-shadow:0 0 8px #2563ebb3}.thumb-card img{width:100%;height:100%;object-fit:cover}.thumb-number{position:absolute;top:1px;left:2px;background:#000000bf;color:#fff;font-size:9px;font-weight:800;padding:0 3px;border-radius:2px}.quick-controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn-toggle-active{border:1px solid var(--border-color);font-weight:700;font-size:11px;padding:10px 8px;border-radius:var(--radius-md);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .2s ease}.btn-toggle-ftb{background-color:var(--bg-card);color:var(--text-primary)}.btn-toggle-ftb.active{background-color:var(--accent-amber);color:#000;border-color:var(--accent-amber);box-shadow:0 0 10px #f59e0b99}.btn-toggle-picmute{background-color:var(--bg-card);color:var(--text-primary)}.btn-toggle-picmute.active{background-color:var(--accent-red);color:#fff;border-color:var(--accent-red);box-shadow:0 0 10px #ef444499}.footer-actions{display:flex;justify-content:space-between;align-items:center;margin-top:4px}.link-btn{background:transparent;border:none;color:var(--accent-blue);font-size:11px;cursor:pointer;text-decoration:underline;padding:2px}.link-btn:hover{color:var(--accent-cyan)}.toast-bar{background-color:var(--bg-card);border:1px solid var(--border-highlight);border-radius:var(--radius-md);padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:8px;transition:all .3s ease}.toast-bar.error{background-color:#ef444433;border-color:var(--accent-red);color:#fca5a5}.toast-bar.success{background-color:#10b98133;border-color:var(--accent-green);color:#6ee7b7}.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}@keyframes spin{to{transform:rotate(360deg)}}.progress-container{display:flex;flex-direction:column;gap:6px;background-color:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0}.progress-header{display:flex;justify-content:space-between;align-items:center;font-size:11px}.progress-label{color:var(--text-muted);font-weight:500}.progress-percent{color:var(--accent-cyan);font-weight:700;font-family:monospace}.progress-track{width:100%;height:6px;background-color:var(--bg-card);border-radius:999px;overflow:hidden}.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));border-radius:999px;transition:width .25s ease-out}.graphics-deck{display:flex;flex-direction:column;gap:12px}.graphic-cued-box{background-color:var(--bg-secondary);border:2px solid var(--border-color);border-radius:var(--radius-md);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s ease,box-shadow .2s ease;position:relative}.graphic-cued-box.on-air{border-color:var(--accent-red);box-shadow:0 0 16px #ef444459}.on-air-tag{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}.on-air-tag.live{background-color:var(--accent-red);color:#fff;animation:pulseRed 1.8s infinite}.on-air-tag.cued{background-color:var(--bg-card);color:var(--text-muted)}@keyframes pulseRed{0%,to{box-shadow:0 0 6px #ef444466}50%{box-shadow:0 0 14px #ef4444e6}}.graphic-preview-wrap{background:repeating-conic-gradient(#1e293b 0% 25%,#0f172a 0% 50%) 50% / 16px 16px;border-radius:var(--radius-sm);padding:10px;width:100%;display:flex;justify-content:center;align-items:center;min-height:100px}.graphic-preview-img{max-height:100px;max-width:100%;border-radius:4px;box-shadow:0 4px 12px #00000080}.graphic-title-label{font-size:13px;font-weight:600;color:var(--text-primary);text-align:center}.graphic-hotkey-bar{display:flex;justify-content:center;gap:10px;font-size:10px;color:var(--text-dim);margin-top:-2px}.link-btn{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;margin-left:8px;font:inherit}.settings-form{display:grid;gap:8px;margin:8px 0;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:8px}.settings-form label{display:grid;gap:4px;font-size:12px}.settings-form input{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:inherit}.settings-actions{display:flex;flex-wrap:wrap;gap:6px}.settings-error{color:#fca5a5;font-size:12px}', W = { DEV: !1, VITE_GATEWAY_API_KEY: "", VITE_GATEWAY_URL: "https://kehitys.riihimaenseurakunta.fi/canva" }, A = typeof import.meta < "u" && W ? W : null, E = A || (typeof process < "u" ? process.env : {}), T = "canva-pieco-app.settings";
-function X() {
+const le = "2.8.0", ce = canva_sdk.intents.v1.design.prepareDesignEditor;
+window.__canva__?.sdkRegistration?.registerPackageVersion("intents/design", le, "ga");
+const de = ':root{--bg-primary: #0f172a;--bg-secondary: #1e293b;--bg-card: #334155;--bg-active: #2563eb;--text-primary: #f8fafc;--text-muted: #94a3b8;--text-dim: #64748b;--border-color: #334155;--border-highlight: #475569;--accent-blue: #3b82f6;--accent-cyan: #06b6d4;--accent-green: #10b981;--accent-amber: #f59e0b;--accent-red: #ef4444;--radius-sm: 6px;--radius-md: 10px;--radius-lg: 14px;--font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif}*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font-main);background-color:var(--bg-primary);color:var(--text-primary);font-size:13px;line-height:1.4;user-select:none;-webkit-font-smoothing:antialiased;padding:12px;min-height:100vh}#app{display:flex;flex-direction:column;gap:12px;max-width:420px;margin:0 auto}.app-header{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border-color);padding-bottom:10px}.header-top{display:flex;justify-content:space-between;align-items:center}.brand-title{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px}.church-badge{background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));color:#fff;padding:2px 7px;border-radius:var(--radius-sm);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}.status-pill{display:flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:999px;background-color:var(--bg-secondary);color:var(--text-muted)}.status-dot{width:7px;height:7px;border-radius:50%;background-color:var(--text-dim)}.status-dot.online{background-color:var(--accent-green);box-shadow:0 0 6px var(--accent-green)}.status-dot.simulated{background-color:var(--accent-amber)}.status-dot.offline{background-color:var(--accent-red)}.target-info{font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mode-switcher{display:flex;background-color:var(--bg-secondary);border-radius:var(--radius-sm);padding:3px;gap:4px}.mode-btn{flex:1;background:transparent;border:none;color:var(--text-muted);padding:6px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center;gap:5px}.mode-btn.active{background-color:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 3px #0000004d}.mode-btn:hover:not(.active){color:var(--text-primary)}.step-nav{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background-color:var(--bg-secondary);padding:3px;border-radius:var(--radius-md)}.step-tab{background:transparent;border:none;color:var(--text-muted);font-size:11px;font-weight:600;padding:7px 4px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .2s ease}.step-tab:hover:not(:disabled){color:var(--text-primary);background-color:var(--bg-card)}.step-tab.active{background-color:var(--bg-active);color:#fff}.step-tab:disabled{opacity:.4;cursor:not-allowed}.view-card{background-color:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:12px}.card-title{font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;justify-content:space-between}.card-subtitle{font-size:12px;color:var(--text-muted);line-height:1.4}.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;font-weight:600;font-size:13px;padding:10px 14px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s ease,filter .2s ease;box-shadow:0 2px 8px #2563eb4d}.btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}.btn-primary:active:not(:disabled){transform:translateY(0)}.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}.btn-secondary{background-color:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-highlight);font-weight:600;font-size:12px;padding:8px 12px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s ease}.btn-secondary:hover:not(:disabled){background-color:var(--border-highlight)}.btn-secondary:disabled{opacity:.4;cursor:not-allowed}.export-meta{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:10px;display:flex;flex-direction:column;gap:6px}.meta-row{display:flex;justify-content:space-between;font-size:11px}.meta-label{color:var(--text-dim)}.meta-value{color:var(--text-primary);font-weight:600}.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;max-height:180px;overflow-y:auto;padding:4px;background-color:var(--bg-primary);border-radius:var(--radius-md)}.preview-item{position:relative;aspect-ratio:16 / 9;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-color);background-color:#000}.preview-item img{width:100%;height:100%;object-fit:cover}.preview-badge{position:absolute;bottom:2px;right:2px;background:#000000bf;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px}.form-group{display:flex;flex-direction:column;gap:6px}.form-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}.radio-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}.radio-tile{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:all .2s ease}.radio-tile:hover{border-color:var(--accent-blue)}.radio-tile.selected{border-color:var(--accent-blue);background-color:#2563eb26}.tile-title{font-size:12px;font-weight:700;color:var(--text-primary)}.tile-desc{font-size:10px;color:var(--text-dim)}.select-input{background-color:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:8px 10px;font-size:12px;outline:none;width:100%;cursor:pointer}.select-input:focus{border-color:var(--accent-blue)}.checkbox-row{display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:6px 0}.checkbox-row input{margin-top:2px;accent-color:var(--accent-blue);cursor:pointer}.checkbox-label{font-size:12px;color:var(--text-primary);font-weight:500}.checkbox-hint{font-size:10px;color:var(--text-dim)}.live-banner{background:linear-gradient(135deg,#ef444433,#2563eb33);border:1px solid var(--accent-red);border-radius:var(--radius-md);padding:8px 12px;display:flex;align-items:center;justify-content:space-between}.live-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--accent-red);letter-spacing:.5px}.live-pulse{width:8px;height:8px;border-radius:50%;background-color:var(--accent-red);animation:pulse 1.5s infinite}@keyframes pulse{0%{transform:scale(.9);opacity:.8}50%{transform:scale(1.3);opacity:1}to{transform:scale(.9);opacity:.8}}.live-routing-badge{font-size:11px;font-weight:600;color:var(--text-muted)}.slide-display-box{background-color:var(--bg-primary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;overflow:hidden}.slide-number-big{font-size:32px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}.slide-count-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}.slide-title-preview{font-size:13px;color:var(--accent-cyan);font-weight:600;text-align:center;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav-buttons-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn-nav{height:60px;font-size:15px;font-weight:800;border-radius:var(--radius-lg);border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s ease}.btn-nav-prev{background-color:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-highlight)}.btn-nav-prev:hover:not(:disabled){background-color:var(--border-highlight)}.btn-nav-next{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 12px #10b98159}.btn-nav-next:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-2px)}.btn-nav:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}.nav-key-hint{font-size:9px;opacity:.7;font-weight:500}.thumbnails-strip{display:flex;gap:6px;overflow-x:auto;padding:6px 2px;scrollbar-width:thin}.thumb-card{flex:0 0 64px;aspect-ratio:16 / 9;background-color:var(--bg-primary);border:2px solid var(--border-color);border-radius:var(--radius-sm);cursor:pointer;position:relative;overflow:hidden;transition:all .15s ease}.thumb-card:hover{border-color:var(--text-muted)}.thumb-card.active{border-color:var(--accent-blue);box-shadow:0 0 8px #2563ebb3}.thumb-card img{width:100%;height:100%;object-fit:cover}.thumb-number{position:absolute;top:1px;left:2px;background:#000000bf;color:#fff;font-size:9px;font-weight:800;padding:0 3px;border-radius:2px}.quick-controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn-toggle-active{border:1px solid var(--border-color);font-weight:700;font-size:11px;padding:10px 8px;border-radius:var(--radius-md);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .2s ease}.btn-toggle-ftb{background-color:var(--bg-card);color:var(--text-primary)}.btn-toggle-ftb.active{background-color:var(--accent-amber);color:#000;border-color:var(--accent-amber);box-shadow:0 0 10px #f59e0b99}.btn-toggle-picmute{background-color:var(--bg-card);color:var(--text-primary)}.btn-toggle-picmute.active{background-color:var(--accent-red);color:#fff;border-color:var(--accent-red);box-shadow:0 0 10px #ef444499}.footer-actions{display:flex;justify-content:space-between;align-items:center;margin-top:4px}.link-btn{background:transparent;border:none;color:var(--accent-blue);font-size:11px;cursor:pointer;text-decoration:underline;padding:2px}.link-btn:hover{color:var(--accent-cyan)}.toast-bar{background-color:var(--bg-card);border:1px solid var(--border-highlight);border-radius:var(--radius-md);padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:8px;transition:all .3s ease}.toast-bar.error{background-color:#ef444433;border-color:var(--accent-red);color:#fca5a5}.toast-bar.success{background-color:#10b98133;border-color:var(--accent-green);color:#6ee7b7}.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}@keyframes spin{to{transform:rotate(360deg)}}.progress-container{display:flex;flex-direction:column;gap:6px;background-color:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0}.progress-header{display:flex;justify-content:space-between;align-items:center;font-size:11px}.progress-label{color:var(--text-muted);font-weight:500}.progress-percent{color:var(--accent-cyan);font-weight:700;font-family:monospace}.progress-track{width:100%;height:6px;background-color:var(--bg-card);border-radius:999px;overflow:hidden}.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));border-radius:999px;transition:width .25s ease-out}.graphics-deck{display:flex;flex-direction:column;gap:12px}.graphic-cued-box{background-color:var(--bg-secondary);border:2px solid var(--border-color);border-radius:var(--radius-md);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .2s ease,box-shadow .2s ease;position:relative}.graphic-cued-box.on-air{border-color:var(--accent-red);box-shadow:0 0 16px #ef444459}.on-air-tag{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}.on-air-tag.live{background-color:var(--accent-red);color:#fff;animation:pulseRed 1.8s infinite}.on-air-tag.cued{background-color:var(--bg-card);color:var(--text-muted)}@keyframes pulseRed{0%,to{box-shadow:0 0 6px #ef444466}50%{box-shadow:0 0 14px #ef4444e6}}.graphic-preview-wrap{background:repeating-conic-gradient(#1e293b 0% 25%,#0f172a 0% 50%) 50% / 16px 16px;border-radius:var(--radius-sm);padding:10px;width:100%;display:flex;justify-content:center;align-items:center;min-height:100px}.graphic-preview-img{max-height:100px;max-width:100%;border-radius:4px;box-shadow:0 4px 12px #00000080}.graphic-title-label{font-size:13px;font-weight:600;color:var(--text-primary);text-align:center}.graphic-hotkey-bar{display:flex;justify-content:center;gap:10px;font-size:10px;color:var(--text-dim);margin-top:-2px}.link-btn{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;margin-left:8px;font:inherit}.settings-form{display:grid;gap:8px;margin:8px 0;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:8px}.settings-form label{display:grid;gap:4px;font-size:12px}.settings-form input{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:inherit}.settings-actions{display:flex;flex-wrap:wrap;gap:6px}.settings-error{color:#fca5a5;font-size:12px}';
+let W = !1;
+ce({
+  render: async () => {
+    if (W) return;
+    W = !0;
+    const t = document.createElement("style");
+    if (t.textContent = de, document.head.append(t), !document.getElementById("app")) {
+      const a = document.createElement("div");
+      a.id = "app", (document.getElementById("root") ?? document.body).append(a);
+    }
+    await Promise.resolve().then(() => Ue);
+  }
+});
+const X = { DEV: !1, VITE_GATEWAY_API_KEY: "", VITE_GATEWAY_URL: "https://kehitys.riihimaenseurakunta.fi/canva" }, A = typeof import.meta < "u" && X ? X : null, E = A || (typeof process < "u" ? process.env : {}), T = "canva-pieco-app.settings";
+function Z() {
   try {
     const t = globalThis.localStorage?.getItem(T), a = t ? JSON.parse(t) : {};
     return a && typeof a == "object" ? a : {};
@@ -7,7 +23,7 @@ function X() {
     return {};
   }
 }
-function te(t) {
+function ae(t) {
   const a = String(t ?? "").trim().replace(/\/+$/, "");
   if (!a) return null;
   try {
@@ -17,8 +33,8 @@ function te(t) {
     return null;
   }
 }
-function ce({ gatewayUrl: t, gatewayApiKey: a }) {
-  const n = te(t);
+function pe({ gatewayUrl: t, gatewayApiKey: a }) {
+  const n = ae(t);
   if (!n) throw new Error("The gateway address must be an https address, for example https://gateway.example.org");
   try {
     globalThis.localStorage?.setItem(T, JSON.stringify({ gatewayUrl: n, gatewayApiKey: String(a ?? "").trim() }));
@@ -26,7 +42,7 @@ function ce({ gatewayUrl: t, gatewayApiKey: a }) {
     throw new Error("This browser would not keep the settings (storage is blocked).");
   }
 }
-function de() {
+function ue() {
   try {
     globalThis.localStorage?.removeItem(T);
   } catch {
@@ -35,10 +51,10 @@ function de() {
 const g = Object.freeze({
   appName: E.VITE_APP_NAME || "Church Slide Bridge",
   get gatewayUrl() {
-    return te(X().gatewayUrl) || (E.VITE_GATEWAY_URL || "https://gateway.local:8443").replace(/\/+$/, "");
+    return ae(Z().gatewayUrl) || (E.VITE_GATEWAY_URL || "https://gateway.local:8443").replace(/\/+$/, "");
   },
   get gatewayApiKey() {
-    const t = X();
+    const t = Z();
     return typeof t.gatewayApiKey == "string" && t.gatewayUrl ? t.gatewayApiKey : E.VITE_GATEWAY_API_KEY || "";
   },
   // Vite sets DEV only for `vite` (the dev server); a production build has it false. Under plain
@@ -52,7 +68,7 @@ function B() {
     return !0;
   }
 }
-function pe() {
+function ge() {
   const t = [
     { name: "Slide 1 - Welcome", color: "#1e3a8a", text: "Welcome to Church" },
     { name: "Slide 2 - Song 1", color: "#1e293b", text: "Amazing Grace" },
@@ -76,11 +92,11 @@ function pe() {
     })
   };
 }
-async function ae() {
+async function ne() {
   if (!B())
-    return pe();
+    return ge();
   try {
-    const { requestExport: t } = await Promise.resolve().then(() => wt), a = await t({
+    const { requestExport: t } = await Promise.resolve().then(() => St), a = await t({
       acceptedFileTypes: [
         {
           type: "png",
@@ -111,29 +127,29 @@ class x extends Error {
     super(a), this.name = "GatewayError", this.status = n, this.details = i;
   }
 }
-let ue = null;
-async function ge() {
+let ve = null;
+async function fe() {
   try {
-    const { auth: t } = await Promise.resolve().then(() => Pt), a = await t.getCanvaUserToken();
+    const { auth: t } = await Promise.resolve().then(() => Mt), a = await t.getCanvaUserToken();
     return typeof a == "string" && a ? a : null;
   } catch {
     return null;
   }
 }
-async function ve() {
+async function me() {
   const t = {
     "Content-Type": "application/json",
     Accept: "application/json"
-  }, a = await ge();
+  }, a = await fe();
   return a ? t.Authorization = `Bearer ${a}` : g.gatewayApiKey && (t.Authorization = `Bearer ${g.gatewayApiKey}`, t["X-Api-Key"] = g.gatewayApiKey), t;
 }
 async function h(t, a = {}) {
   const n = `${g.gatewayUrl}${t}`, i = new AbortController(), s = setTimeout(() => i.abort(), a.timeoutMs || 1e4);
   try {
-    const d = await (ue || fetch)(n, {
+    const d = await (ve || fetch)(n, {
       ...a,
       headers: {
-        ...await ve(),
+        ...await me(),
         ...a.headers || {}
       },
       signal: i.signal
@@ -161,18 +177,18 @@ const p = {
   ftb: !1,
   picMute: !1,
   tasks: /* @__PURE__ */ new Map()
-}, fe = /^\d{4}-\d{2}-\d{2}(T\d{2})?$/;
-function me(t) {
+}, be = /^\d{4}-\d{2}-\d{2}(T\d{2})?$/;
+function he(t) {
   const a = String(t ?? "").split(",").map((n) => n.trim()).filter(Boolean);
   if (a.length === 0) return null;
   for (const n of a) {
     const i = n.split("/");
-    if (i.length > 2 || !i.every((s) => fe.test(s)))
+    if (i.length > 2 || !i.every((s) => be.test(s)))
       throw new Error(`"${n}" is not a service date. Use 2026-11-08, 2026-11-08T10 or a range 2026-11-08/2026-11-09.`);
   }
   return a.length === 1 ? a[0] : a;
 }
-async function be({ title: t, pages: a, useAt: n = null }) {
+async function xe({ title: t, pages: a, useAt: n = null }) {
   try {
     return await h("/api/v1/canva/push", {
       method: "POST",
@@ -197,14 +213,14 @@ async function be({ title: t, pages: a, useAt: n = null }) {
         pageCount: a.length
       }, p.totalSlides = a.length, p.currentSlide = 1;
       const l = `sim_${s}`;
-      return p.tasks.set(l, { startedAt: Date.now(), presentationId: s, title: t, pageCount: a.length }), ne(l);
+      return p.tasks.set(l, { startedAt: Date.now(), presentationId: s, title: t, pageCount: a.length }), ie(l);
     }
     throw i;
   }
 }
-const he = 3e3;
-function ne(t) {
-  const a = p.tasks.get(t), n = Math.min(1, (Date.now() - a.startedAt) / he), i = a.pageCount, s = Math.min(i, Math.floor(n / 0.3 * i)), l = n >= 1, d = l ? "ready" : n < 0.3 ? "downloading" : n < 0.5 ? "unpacking" : "preparing", o = i * 2, v = n < 0.5 ? 0 : Math.min(o, Math.floor((n - 0.5) / 0.5 * o));
+const ye = 3e3;
+function ie(t) {
+  const a = p.tasks.get(t), n = Math.min(1, (Date.now() - a.startedAt) / ye), i = a.pageCount, s = Math.min(i, Math.floor(n / 0.3 * i)), l = n >= 1, d = l ? "ready" : n < 0.3 ? "downloading" : n < 0.5 ? "unpacking" : "preparing", o = i * 2, v = n < 0.5 ? 0 : Math.min(o, Math.floor((n - 0.5) / 0.5 * o));
   return {
     taskId: t,
     presentationId: a.presentationId,
@@ -220,16 +236,16 @@ function ne(t) {
     isSimulated: !0
   };
 }
-async function xe(t) {
-  return p.tasks.has(t) ? ne(t) : h(`/api/v1/canva/tasks/${encodeURIComponent(t)}`, { timeoutMs: 5e3 });
+async function we(t) {
+  return p.tasks.has(t) ? ie(t) : h(`/api/v1/canva/tasks/${encodeURIComponent(t)}`, { timeoutMs: 5e3 });
 }
-async function ye(t, { onUpdate: a, pollMs: n = 700, timeoutMs: i = 15 * 6e4, sleep: s = (l) => new Promise((d) => setTimeout(d, l)) } = {}) {
+async function ke(t, { onUpdate: a, pollMs: n = 700, timeoutMs: i = 15 * 6e4, sleep: s = (l) => new Promise((d) => setTimeout(d, l)) } = {}) {
   const l = Date.now() + i;
   let d = 0;
   for (; ; ) {
     let o;
     try {
-      o = await xe(t), d = 0;
+      o = await we(t), d = 0;
     } catch (v) {
       if (v instanceof x && v.status === 404 || ++d >= 5) throw v;
       await s(n);
@@ -241,7 +257,7 @@ async function ye(t, { onUpdate: a, pollMs: n = 700, timeoutMs: i = 15 * 6e4, sl
     await s(n);
   }
 }
-async function we({ presentationId: t, pipelineId: a, matrixRoute: n, unblankProjectors: i, cueSlide: s = 1, piOutput: l = null }) {
+async function Se({ presentationId: t, pipelineId: a, matrixRoute: n, unblankProjectors: i, cueSlide: s = 1, piOutput: l = null }) {
   try {
     return await h("/api/v1/canva/setup", {
       method: "POST",
@@ -267,7 +283,7 @@ async function we({ presentationId: t, pipelineId: a, matrixRoute: n, unblankPro
     throw d;
   }
 }
-async function ke({ pipelineId: t, action: a, page: n }) {
+async function Ee({ pipelineId: t, action: a, page: n }) {
   try {
     return await h("/api/v1/canva/control", {
       method: "POST",
@@ -287,7 +303,7 @@ async function ke({ pipelineId: t, action: a, page: n }) {
     throw i;
   }
 }
-async function Se({ pipelineId: t, enabled: a }) {
+async function $e({ pipelineId: t, enabled: a }) {
   try {
     return await h("/api/v1/canva/control", {
       method: "POST",
@@ -303,7 +319,7 @@ async function Se({ pipelineId: t, enabled: a }) {
     throw n;
   }
 }
-async function Ee({ muted: t, pipelineId: a }) {
+async function Pe({ muted: t, pipelineId: a }) {
   try {
     return await h("/api/v1/canva/control", {
       method: "POST",
@@ -319,7 +335,7 @@ async function Ee({ muted: t, pipelineId: a }) {
     throw n;
   }
 }
-async function $e({
+async function Ie({
   title: t,
   image: a,
   imageUrl: n,
@@ -356,7 +372,7 @@ async function $e({
     throw o;
   }
 }
-async function Pe({ keyer: t = "usk", index: a = 1 } = {}) {
+async function Me({ keyer: t = "usk", index: a = 1 } = {}) {
   try {
     return await h("/api/v1/graphics/canva/off-air", {
       method: "POST",
@@ -368,7 +384,7 @@ async function Pe({ keyer: t = "usk", index: a = 1 } = {}) {
     throw n;
   }
 }
-async function Ie(t = "pipgm1") {
+async function Ae(t = "pipgm1") {
   try {
     return await h(`/api/v1/canva/status?pipelineId=${t}`, { timeoutMs: 3e3 });
   } catch (a) {
@@ -386,7 +402,7 @@ async function Ie(t = "pipgm1") {
     throw a;
   }
 }
-function Me(t) {
+function Te(t) {
   const a = 30 + Math.round(Math.max(0, Math.min(1, t.progress ?? 0)) * 69), n = t.downloaded || { done: 0, total: t.pageCount || 0 }, i = t.pictures || { done: 0, total: 0 }, s = t.state === "ready" ? "Ready to present" : t.state === "downloading" || t.state === "queued" ? `Fetching slides from Canva ${n.done}/${n.total}` : t.state === "unpacking" ? "Unpacking slides in Pi Program..." : i.total > 0 ? `Making thumbnails ${i.done}/${i.total}` : "Preparing slides...";
   return { percent: t.state === "ready" ? 100 : a, label: s };
 }
@@ -463,14 +479,14 @@ function u(t, a = "info", n = 4e3) {
 function y(t, a) {
   e.progress.visible = !0, e.progress.percent = Math.min(100, Math.max(0, Math.round(t))), e.progress.label = a || "Processing...", r();
 }
-function Z(t) {
-  const { percent: a, label: n } = Me(t);
+function Q(t) {
+  const { percent: a, label: n } = Te(t);
   y(a, n);
 }
 function m() {
   e.progress.visible = !1, e.progress.percent = 0, e.progress.label = "", r();
 }
-function Ae() {
+function Be() {
   return e.progress.visible ? `
     <div class="progress-container">
       <div class="progress-header">
@@ -483,18 +499,18 @@ function Ae() {
     </div>
   ` : "";
 }
-async function Q() {
+async function ee() {
   if (e.isExporting || e.isPushing) return;
   let t = null;
   try {
-    t = me(e.serviceDate);
+    t = he(e.serviceDate);
   } catch (a) {
     u(a.message, "error");
     return;
   }
   try {
     e.isExporting = !0, y(15, "Exporting slides from Canva..."), r();
-    const a = await ae();
+    const a = await ne();
     if (e.isExporting = !1, a.status === "aborted") {
       m(), u("Export was cancelled.", "info"), r();
       return;
@@ -504,13 +520,13 @@ async function Q() {
       return;
     }
     e.isPushing = !0, y(30, `Sending ${a.exportBlobs.length} slides to the church...`), r();
-    const n = await be({
+    const n = await xe({
       title: a.title || "Canva Slides",
       pages: a.exportBlobs,
       useAt: t
     });
-    Z(n);
-    const i = await ye(n.taskId, { onUpdate: Z });
+    Q(n);
+    const i = await ke(n.taskId, { onUpdate: Q });
     e.isPushing = !1, e.staged = {
       presentationId: i.presentationId || n.presentationId,
       title: a.title || "Canva Presentation",
@@ -521,11 +537,11 @@ async function Q() {
     m(), e.isExporting = !1, e.isPushing = !1, console.error("[canva-pieco-app] Push failed:", a), u(a.message || "Failed to push slides.", "error"), r();
   }
 }
-async function Te() {
+async function _e() {
   if (!e.isSettingUp)
     try {
       e.isSettingUp = !0, r();
-      const t = await we({
+      const t = await Se({
         presentationId: e.staged.presentationId,
         pipelineId: e.setup.pipelineId,
         matrixRoute: e.setup.matrixRoute,
@@ -559,7 +575,7 @@ async function w(t, a = null) {
   e.live.currentSlide = n, r();
   try {
     e.isControlling = !0;
-    const i = await ke({
+    const i = await Ee({
       pipelineId: e.live.pipelineId,
       action: t,
       page: t === "gotoPage" ? n : void 0
@@ -569,11 +585,11 @@ async function w(t, a = null) {
     e.isControlling = !1, console.error("[canva-pieco-app] Slide control failed:", i), u(i.message || "Failed to change slide.", "error"), r();
   }
 }
-async function ie() {
+async function re() {
   const t = !e.live.ftb;
   e.live.ftb = t, r();
   try {
-    await Se({
+    await $e({
       pipelineId: e.live.pipelineId,
       enabled: t
     }), u(t ? "Fade to Black (FTB) ACTIVE" : "Fade to Black OFF", t ? "info" : "success", 2e3);
@@ -582,11 +598,11 @@ async function ie() {
   }
   r();
 }
-async function re() {
+async function se() {
   const t = !e.live.picMute;
   e.live.picMute = t, r();
   try {
-    await Ee({ muted: t, pipelineId: e.live.pipelineId }), u(t ? "Projector Pic Mute ON (Beams Blanked)" : "Projector Pic Mute OFF (Beams Live)", t ? "info" : "success", 2500);
+    await Pe({ muted: t, pipelineId: e.live.pipelineId }), u(t ? "Projector Pic Mute ON (Beams Blanked)" : "Projector Pic Mute OFF (Beams Live)", t ? "info" : "success", 2500);
   } catch (a) {
     e.live.picMute = !t, console.error("[canva-pieco-app] Pic Mute failed:", a), u(a.message || "Failed to toggle projector mute.", "error");
   }
@@ -595,18 +611,18 @@ async function re() {
 window.addEventListener("keydown", (t) => {
   if (!(t.target && ["INPUT", "SELECT", "TEXTAREA"].includes(t.target.tagName))) {
     if (e.appMode === "graphics") {
-      t.key === " " || t.key === "Enter" ? (t.preventDefault(), e.graphics.onAir ? $() : se()) : t.key === "Escape" ? (t.preventDefault(), $()) : t.key === "ArrowDown" || t.key === "ArrowRight" ? (t.preventDefault(), P("next")) : (t.key === "ArrowUp" || t.key === "ArrowLeft") && (t.preventDefault(), P("prev"));
+      t.key === " " || t.key === "Enter" ? (t.preventDefault(), e.graphics.onAir ? $() : oe()) : t.key === "Escape" ? (t.preventDefault(), $()) : t.key === "ArrowDown" || t.key === "ArrowRight" ? (t.preventDefault(), P("next")) : (t.key === "ArrowUp" || t.key === "ArrowLeft") && (t.preventDefault(), P("prev"));
       return;
     }
-    e.currentStep === 3 && (t.key === "ArrowRight" || t.key === "PageDown" || t.key === " " ? (t.preventDefault(), w("next")) : t.key === "ArrowLeft" || t.key === "PageUp" ? (t.preventDefault(), w("prev")) : t.key === "b" || t.key === "B" ? (t.preventDefault(), ie()) : (t.key === "m" || t.key === "M") && (t.preventDefault(), re()));
+    e.currentStep === 3 && (t.key === "ArrowRight" || t.key === "PageDown" || t.key === " " ? (t.preventDefault(), w("next")) : t.key === "ArrowLeft" || t.key === "PageUp" ? (t.preventDefault(), w("prev")) : t.key === "b" || t.key === "B" ? (t.preventDefault(), re()) : (t.key === "m" || t.key === "M") && (t.preventDefault(), se()));
   }
 });
 let b = null;
-async function ee() {
+async function te() {
   if (!e.graphics.isPushing)
     try {
       e.graphics.isPushing = !0, y(20, "Exporting transparent graphics deck from Canva..."), r();
-      const t = await ae();
+      const t = await ne();
       if (t.status === "aborted") {
         m(), e.graphics.isPushing = !1, u("Graphic export was cancelled.", "info"), r();
         return;
@@ -622,7 +638,7 @@ async function ee() {
       m(), e.graphics.isPushing = !1, u(`Failed to export graphics: ${t.message}`, "error"), r();
     }
 }
-async function se(t) {
+async function oe(t) {
   const a = e.graphics.cuedIndex, n = e.graphics.pages && e.graphics.pages[a - 1];
   if (!n) {
     u("No graphic selected to fly.", "error");
@@ -631,7 +647,7 @@ async function se(t) {
   e.graphics.cuedIndex = a, e.graphics.isPushing = !0, y(50, `Flown to ATEM: ${n.name || `Graphic ${a}`}...`), r();
   try {
     const i = n.name || `Graphic ${a}`;
-    if (await $e({
+    if (await Ie({
       title: i,
       imageUrl: n.url,
       movement: e.graphics.movement,
@@ -653,7 +669,7 @@ async function se(t) {
 async function $() {
   b && (clearInterval(b), b = null);
   try {
-    await Pe({ keyer: e.graphics.keyer, index: 1 }), e.graphics.onAir = !1, e.graphics.onAirIndex = null, e.graphics.autoHideRemainingSeconds = null, u("Graphic taken off air.", "info"), r();
+    await Me({ keyer: e.graphics.keyer, index: 1 }), e.graphics.onAir = !1, e.graphics.onAirIndex = null, e.graphics.autoHideRemainingSeconds = null, u("Graphic taken off air.", "info"), r();
   } catch (t) {
     u(`Failed to take off air: ${t.message}`, "error");
   }
@@ -666,7 +682,7 @@ function P(t) {
 async function I() {
   if (!e.settingsOpen) {
     try {
-      const t = await Ie(e.live.pipelineId);
+      const t = await Ae(e.live.pipelineId);
       e.gatewayStatus = t.isSimulated ? "simulated" : "online";
     } catch {
       e.gatewayStatus = "offline";
@@ -679,7 +695,7 @@ I();
 function k(t) {
   return String(t ?? "").replace(/[&<>"']/g, (a) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[a]);
 }
-function Be() {
+function Ce() {
   return e.settingsOpen ? `
     <form class="settings-form" id="settings-form">
       <label>Gateway address (https)
@@ -697,7 +713,7 @@ function Be() {
     </form>
   ` : "";
 }
-function Ce() {
+function De() {
   const t = e.gatewayStatus === "online" ? "online" : e.gatewayStatus === "simulated" ? "simulated" : "offline", a = e.gatewayStatus === "online" ? "Gateway Connected" : e.gatewayStatus === "simulated" ? "Simulated Dev" : "Gateway Offline";
   return `
     <header class="app-header">
@@ -715,7 +731,7 @@ function Ce() {
         Target: <strong>${k(g.gatewayUrl)}</strong>
         <button type="button" class="link-btn" id="btn-settings">Settings</button>
       </div>
-      ${Be()}
+      ${Ce()}
       <div class="mode-switcher" style="margin-top: 4px;">
         <button class="mode-btn ${e.appMode === "slides" ? "active" : ""}" data-mode="slides">
           📽 Slide Presentation
@@ -727,7 +743,7 @@ function Ce() {
     </header>
   `;
 }
-function _e() {
+function Re() {
   const t = e.graphics.isPushing, a = e.graphics.onAir, n = e.graphics.pages || [], i = n.length, s = Math.max(1, Math.min(i || 1, e.graphics.cuedIndex || 1)), l = n[s - 1];
   if (i === 0)
     return `
@@ -890,7 +906,7 @@ function _e() {
     </section>
   `;
 }
-function De() {
+function Le() {
   return `
     <nav class="step-nav" aria-label="Workflow Steps">
       <button class="step-tab ${e.currentStep === 1 ? "active" : ""}" data-step="1">
@@ -899,20 +915,20 @@ function De() {
       <button class="step-tab ${e.currentStep === 2 ? "active" : ""}" ${e.staged.presentationId ? "" : "disabled"} data-step="2">
         <span>2. Setup</span>
       </button>
-      <button class="step-tab ${e.currentStep === 3 ? "active" : ""}" ${e.live.totalSlides <= 1 && !e.staged.presentationId ? "disabled" : ""} data-step="3">
+      <button class="step-tab ${e.currentStep === 3 ? "active" : ""}" ${e.staged.presentationId ? "" : "disabled"} data-step="3">
         <span>3. Live</span>
       </button>
     </nav>
   `;
 }
-function Re() {
+function Oe() {
   return e.toast ? `
     <div class="toast-bar ${e.toast.type}">
       <span>${e.toast.message}</span>
     </div>
   ` : "";
 }
-function Le() {
+function Fe() {
   const t = e.isExporting || e.isPushing, a = e.isExporting ? '<span class="spinner"></span> Exporting from Canva...' : e.isPushing ? '<span class="spinner"></span> Uploading to Pi Storage...' : "📤 Push Content to Church";
   return `
     <section class="view-card">
@@ -968,7 +984,7 @@ function Le() {
     </section>
   `;
 }
-function Oe() {
+function ze() {
   const t = e.isSettingUp, a = e.setup.pipelineId === "pipgm1";
   return `
     <section class="view-card">
@@ -1043,7 +1059,7 @@ function Oe() {
     </section>
   `;
 }
-function Fe() {
+function Ge() {
   const t = e.live.currentSlide, a = e.live.totalSlides, n = t <= 1, i = t >= a, s = e.live.pages && e.live.pages[t - 1] ? e.live.pages[t - 1].name || `Slide ${t}` : `Slide ${t}`, l = e.live.matrixRoute === "both_projectors" ? "Both Projectors" : e.live.matrixRoute === "landscape_screen" ? "Landscape Screen" : e.live.matrixRoute === "all_displays" ? "All Displays" : "Custom Route";
   return `
     <section class="view-card">
@@ -1116,15 +1132,15 @@ function r() {
   if (!t) return;
   const a = e.appMode === "graphics";
   let n = "";
-  a ? n = _e() : e.currentStep === 1 ? n = Le() : e.currentStep === 2 ? n = Oe() : e.currentStep === 3 && (n = Fe()), t.innerHTML = `
-    ${Ce()}
-    ${Ae()}
-    ${a ? "" : De()}
-    ${Re()}
+  a ? n = Re() : e.currentStep === 1 ? n = Fe() : e.currentStep === 2 ? n = ze() : e.currentStep === 3 && (n = Ge()), t.innerHTML = `
+    ${De()}
+    ${Be()}
+    ${a ? "" : Le()}
+    ${Oe()}
     ${n}
-  `, ze();
+  `, je();
 }
-function ze() {
+function je() {
   const t = document.getElementById("btn-settings");
   t && t.addEventListener("click", () => {
     e.settingsOpen = !e.settingsOpen, e.settingsError = "", r();
@@ -1133,7 +1149,7 @@ function ze() {
   a && (a.addEventListener("submit", (c) => {
     c.preventDefault();
     try {
-      ce({
+      pe({
         gatewayUrl: document.getElementById("settings-url").value,
         gatewayApiKey: document.getElementById("settings-key").value
       }), e.settingsOpen = !1, e.settingsError = "", e.gatewayStatus = "checking", r(), I();
@@ -1141,7 +1157,7 @@ function ze() {
       e.settingsError = f.message, r();
     }
   }), document.getElementById("settings-reset")?.addEventListener("click", () => {
-    de(), e.settingsOpen = !1, e.gatewayStatus = "checking", r(), I();
+    ue(), e.settingsOpen = !1, e.gatewayStatus = "checking", r(), I();
   }), document.getElementById("settings-close")?.addEventListener("click", () => {
     e.settingsOpen = !1, r();
   })), document.querySelectorAll(".mode-btn").forEach((c) => {
@@ -1151,12 +1167,12 @@ function ze() {
     });
   });
   const n = document.getElementById("btn-export-graphics");
-  n && n.addEventListener("click", ee);
+  n && n.addEventListener("click", te);
   const i = document.getElementById("btn-reexport-graphics");
-  i && i.addEventListener("click", ee);
+  i && i.addEventListener("click", te);
   const s = document.getElementById("btn-fly-toggle");
   s && s.addEventListener("click", () => {
-    e.graphics.onAir ? $() : se();
+    e.graphics.onAir ? $() : oe();
   });
   const l = document.getElementById("btn-graphic-offair");
   l && l.addEventListener("click", $);
@@ -1177,12 +1193,12 @@ function ze() {
   S && S.addEventListener("change", (c) => {
     e.graphics.autoHideMs = parseInt(c.target.value, 10);
   });
-  const C = document.getElementById("select-graphic-slot");
-  C && C.addEventListener("change", (c) => {
+  const _ = document.getElementById("select-graphic-slot");
+  _ && _.addEventListener("change", (c) => {
     e.graphics.slot = parseInt(c.target.value, 10);
   });
-  const _ = document.getElementById("select-graphic-player");
-  _ && _.addEventListener("change", (c) => {
+  const C = document.getElementById("select-graphic-player");
+  C && C.addEventListener("change", (c) => {
     e.graphics.mediaPlayer = parseInt(c.target.value, 10);
   }), document.querySelectorAll(".step-tab").forEach((c) => {
     c.addEventListener("click", () => {
@@ -1191,9 +1207,9 @@ function ze() {
     });
   });
   const D = document.getElementById("btn-push");
-  D && D.addEventListener("click", Q);
+  D && D.addEventListener("click", ee);
   const R = document.getElementById("btn-repush");
-  R && R.addEventListener("click", Q);
+  R && R.addEventListener("click", ee);
   const L = document.getElementById("btn-goto-step2");
   L && L.addEventListener("click", () => {
     e.currentStep = 2, r();
@@ -1223,7 +1239,7 @@ function ze() {
     e.setup.cueSlide = c.target.checked ? 1 : null;
   });
   const U = document.getElementById("btn-apply-setup");
-  U && U.addEventListener("click", Te);
+  U && U.addEventListener("click", _e);
   const N = document.getElementById("btn-back-step1");
   N && N.addEventListener("click", () => {
     e.currentStep = 1, r();
@@ -1238,9 +1254,9 @@ function ze() {
     });
   });
   const V = document.getElementById("btn-toggle-ftb");
-  V && V.addEventListener("click", ie);
+  V && V.addEventListener("click", re);
   const q = document.getElementById("btn-toggle-picmute");
-  q && q.addEventListener("click", re);
+  q && q.addEventListener("click", se);
   const J = document.getElementById("btn-restart-slide1");
   J && J.addEventListener("click", () => w("gotoPage", 1));
   const Y = document.getElementById("btn-back-setup");
@@ -1250,54 +1266,50 @@ function ze() {
 }
 document.addEventListener("DOMContentLoaded", r);
 (document.readyState === "complete" || document.readyState === "interactive") && r();
-const Ge = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const Ue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null
-}, Symbol.toStringTag, { value: "Module" })), oe = document.createElement("style");
-oe.textContent = le;
-document.head.append(oe);
-await Promise.resolve().then(() => Ge);
-const je = "2.14.0", Ue = canva_sdk.design.v2.designInteraction.selection, Ne = canva_sdk.design.v2.designInteraction.overlay, He = canva_sdk.design.v2.designInteraction.addPage, Ke = canva_sdk.design.v2.designInteraction.resizeDesign, Ve = canva_sdk.design.v2.designInteraction.searchResizePreset, qe = canva_sdk.design.v2.designInteraction.setCurrentPageBackground, Je = canva_sdk.design.v2.designInteraction.getDefaultPageDimensions, Ye = canva_sdk.design.v2.export.requestExport, We = canva_sdk.design.v2.dragAndDrop, Xe = canva_sdk.design.v2.designInteraction.addNativeElement, Ze = canva_sdk.design.v2.designInteraction.addElementAtPoint, Qe = canva_sdk.design.v2.designInteraction.addElementAtCursor, et = canva_sdk.design.v2.designInteraction.addAudioTrack, tt = canva_sdk.design.v2.designInteraction.getCurrentPageContext, at = canva_sdk.design.v2.designInteraction.initAppElement, nt = canva_sdk.design.v2.designInteraction.getDesignToken, it = canva_sdk.design.v2.designInteraction.getDesignMetadata, rt = canva_sdk.design.v2.designInteraction.getCurrentPageMetadata, st = canva_sdk.design.v2.templates.getDesignTemplateMetadata, ot = canva_sdk.design.v2.designInteraction.createRichtextRange, lt = canva_sdk.design.v2.designInteraction.editContent, ct = canva_sdk.design.v2.designInteraction.openDesign, dt = canva_sdk.design.v2.designInteraction.publish, pt = canva_sdk.design.v2.designInteraction.bulkCreate, ut = canva_sdk.design.v2.designInteraction.getDesignColors, gt = canva_sdk.design.v2.designInteraction.getBrandKitColors, vt = canva_sdk.design.v2.autofill.autofillDesign, ft = canva_sdk.design.v2.autofill.requestDataFieldMatching, mt = canva_sdk.design.v2.autofill.setDataFieldLabelVisibility, bt = canva_sdk.design.v2.templates.requestApplyPublicTemplate, ht = canva_sdk.design.v2.templates.requestBrandTemplates, xt = canva_sdk.design.v2.templates.getBrandTemplateMetadata, yt = canva_sdk.design.v2.templates.applyTemplate;
-window.__canva__?.sdkRegistration?.registerPackageVersion("design", je, "ga");
-const wt = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+}, Symbol.toStringTag, { value: "Module" })), Ne = "2.14.0", He = canva_sdk.design.v2.designInteraction.selection, Ke = canva_sdk.design.v2.designInteraction.overlay, Ve = canva_sdk.design.v2.designInteraction.addPage, qe = canva_sdk.design.v2.designInteraction.resizeDesign, Je = canva_sdk.design.v2.designInteraction.searchResizePreset, Ye = canva_sdk.design.v2.designInteraction.setCurrentPageBackground, We = canva_sdk.design.v2.designInteraction.getDefaultPageDimensions, Xe = canva_sdk.design.v2.export.requestExport, Ze = canva_sdk.design.v2.dragAndDrop, Qe = canva_sdk.design.v2.designInteraction.addNativeElement, et = canva_sdk.design.v2.designInteraction.addElementAtPoint, tt = canva_sdk.design.v2.designInteraction.addElementAtCursor, at = canva_sdk.design.v2.designInteraction.addAudioTrack, nt = canva_sdk.design.v2.designInteraction.getCurrentPageContext, it = canva_sdk.design.v2.designInteraction.initAppElement, rt = canva_sdk.design.v2.designInteraction.getDesignToken, st = canva_sdk.design.v2.designInteraction.getDesignMetadata, ot = canva_sdk.design.v2.designInteraction.getCurrentPageMetadata, lt = canva_sdk.design.v2.templates.getDesignTemplateMetadata, ct = canva_sdk.design.v2.designInteraction.createRichtextRange, dt = canva_sdk.design.v2.designInteraction.editContent, pt = canva_sdk.design.v2.designInteraction.openDesign, ut = canva_sdk.design.v2.designInteraction.publish, gt = canva_sdk.design.v2.designInteraction.bulkCreate, vt = canva_sdk.design.v2.designInteraction.getDesignColors, ft = canva_sdk.design.v2.designInteraction.getBrandKitColors, mt = canva_sdk.design.v2.autofill.autofillDesign, bt = canva_sdk.design.v2.autofill.requestDataFieldMatching, ht = canva_sdk.design.v2.autofill.setDataFieldLabelVisibility, xt = canva_sdk.design.v2.templates.requestApplyPublicTemplate, yt = canva_sdk.design.v2.templates.requestBrandTemplates, wt = canva_sdk.design.v2.templates.getBrandTemplateMetadata, kt = canva_sdk.design.v2.templates.applyTemplate;
+window.__canva__?.sdkRegistration?.registerPackageVersion("design", Ne, "ga");
+const St = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  addAudioTrack: et,
-  addElementAtCursor: Qe,
-  addElementAtPoint: Ze,
-  addNativeElement: Xe,
-  addPage: He,
-  applyTemplate: yt,
-  autofillDesign: vt,
-  bulkCreate: pt,
-  createRichtextRange: ot,
-  editContent: lt,
-  getBrandKitColors: gt,
-  getBrandTemplateMetadata: xt,
-  getCurrentPageContext: tt,
-  getCurrentPageMetadata: rt,
-  getDefaultPageDimensions: Je,
-  getDesignColors: ut,
-  getDesignMetadata: it,
-  getDesignTemplateMetadata: st,
-  getDesignToken: nt,
-  initAppElement: at,
-  openDesign: ct,
-  overlay: Ne,
-  publish: dt,
-  requestApplyPublicTemplate: bt,
-  requestBrandTemplates: ht,
-  requestDataFieldMatching: ft,
-  requestExport: Ye,
-  resizeDesign: Ke,
-  searchResizePreset: Ve,
-  selection: Ue,
-  setCurrentPageBackground: qe,
-  setDataFieldLabelVisibility: mt,
-  ui: We
-}, Symbol.toStringTag, { value: "Module" })), kt = "2.3.0", St = canva_sdk.user.v2.authentication, Et = canva_sdk.user.v2.monetization, $t = canva_sdk.user.v2.OauthError;
-window.__canva__?.sdkRegistration?.registerPackageVersion("user", kt, "ga");
-const Pt = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  addAudioTrack: at,
+  addElementAtCursor: tt,
+  addElementAtPoint: et,
+  addNativeElement: Qe,
+  addPage: Ve,
+  applyTemplate: kt,
+  autofillDesign: mt,
+  bulkCreate: gt,
+  createRichtextRange: ct,
+  editContent: dt,
+  getBrandKitColors: ft,
+  getBrandTemplateMetadata: wt,
+  getCurrentPageContext: nt,
+  getCurrentPageMetadata: ot,
+  getDefaultPageDimensions: We,
+  getDesignColors: vt,
+  getDesignMetadata: st,
+  getDesignTemplateMetadata: lt,
+  getDesignToken: rt,
+  initAppElement: it,
+  openDesign: pt,
+  overlay: Ke,
+  publish: ut,
+  requestApplyPublicTemplate: xt,
+  requestBrandTemplates: yt,
+  requestDataFieldMatching: bt,
+  requestExport: Xe,
+  resizeDesign: qe,
+  searchResizePreset: Je,
+  selection: He,
+  setCurrentPageBackground: Ye,
+  setDataFieldLabelVisibility: ht,
+  ui: Ze
+}, Symbol.toStringTag, { value: "Module" })), Et = "2.3.0", $t = canva_sdk.user.v2.authentication, Pt = canva_sdk.user.v2.monetization, It = canva_sdk.user.v2.OauthError;
+window.__canva__?.sdkRegistration?.registerPackageVersion("user", Et, "ga");
+const Mt = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  OauthError: $t,
-  auth: St,
-  monetization: Et
+  OauthError: It,
+  auth: $t,
+  monetization: Pt
 }, Symbol.toStringTag, { value: "Module" }));
