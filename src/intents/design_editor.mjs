@@ -1,13 +1,8 @@
-// Design Editor intent: the side panel (Play, live driving, upload). Canva calls render() once.
+// Design Editor intent: the side panel (slides and ATEM graphics). Canva calls render() once.
+import { mount } from "../app/mount";
+
 export default {
-  async render() {
-    // main.mjs mounts into #app, but Canva's frame provides #root.
-    if (!document.getElementById("app")) {
-      const app = document.createElement("div");
-      app.id = "app";
-      (document.getElementById("root") || document.body).append(app);
-    }
-    const { mount } = await import("../main.mjs");
-    mount();
+  render() {
+    mount(document.getElementById("root") || document.body.appendChild(document.createElement("div")));
   },
 };
