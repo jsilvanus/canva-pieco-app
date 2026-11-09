@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@canva/design": "^2.14.0",
+    "@canva/intents": "^2.8.0",
     "@canva/platform": "^2.2.3",
     "@canva/user": "^2.3.0"
   },
