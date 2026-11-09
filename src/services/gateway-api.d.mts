@@ -16,7 +16,7 @@ export class GatewayError extends Error {}
 export function setFetchImpl(fn: typeof fetch): void;
 export function resetFetchImpl(): void;
 export function parseUseAt(text: string): string | string[] | null;
-export function pushContent(args: { title: string; pages: PageRef[]; useAt?: string | string[] | null }): Promise<Task>;
+export function pushContent(args: { title: string; pages: PageRef[]; useAt?: string | string[] | null; target?: string | null }): Promise<Task>;
 export function getTask(taskId: string): Promise<Task>;
 export function waitForTask(
   taskId: string,

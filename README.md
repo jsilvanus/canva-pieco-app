@@ -50,7 +50,7 @@ The panel is built the way Canva expects apps to be built:
 * **React** with Canva's **App UI Kit** (`@canva/app-ui-kit`): `AppUiProvider`, `Rows`, `Columns`, `Button`, `FormField`, `Select`, `Tabs`, `Switch`, `ImageCard`, `ProgressBar`, `Alert`. Canva's theme and styles, no custom CSS.
 * **Localization** with `@canva/app-i18n-kit` (`AppI18nProvider`) and `react-intl`. Every user-facing string is a message with a `description`; `babel-plugin-formatjs` gives each one the content-hash id Canva's translation tooling uses.
 * **Linting** with `@canva/app-eslint-plugin` (`apps` config) and TypeScript (`pnpm run lint`, `pnpm run typecheck`; both run in `pnpm run check`).
-* **Intents**: `src/canva-entry.mjs` registers Design Editor (this panel) and Content Publisher. The upload is one classic-script file (`pnpm run build:js` → `dist-js/canva-pieco-app.js`).
+* **Intents**: `src/canva-entry.mjs` registers Design Editor (this panel) and Content Publisher (`src/intents/content_publisher/`, laid out like Canva's content publisher example: `index.tsx`, `settings_ui.tsx`, `preview_ui.tsx`). The publish targets (PiProgram → ATEM or vertical projector, PiGraphics → stream, Saarnavideo later) are Canva output types; the settings form asks for a name and the date or date range, and the preview warns when the design size does not match the target's resolution. The upload is one classic-script file (`pnpm run build:js` → `dist-js/canva-pieco-app.js`).
 
 UI code is in `src/app/` (TSX); the gateway, SDK and config services stay in plain JS with type declarations next to them.
 

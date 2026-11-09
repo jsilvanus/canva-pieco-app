@@ -3,6 +3,6 @@ import { mount } from "../app/mount";
 
 export default {
   render() {
-    mount(document.getElementById("root") || document.body.appendChild(document.createElement("div")));
+    mount();
   },
 };
