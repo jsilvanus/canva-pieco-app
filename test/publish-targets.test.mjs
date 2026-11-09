@@ -42,9 +42,11 @@ test("push payload: single date becomes useAt, range becomes start/end, target i
   assert.deepEqual(buildPushPayload(good, pages), {
     title: "Sunnuntai 15.11.",
     target: "piprogram-atem",
+    orientation: "landscape",
     useAt: "2026-11-15",
     pages,
   });
+  assert.equal(buildPushPayload({ ...good, targetId: "piprogram-vertical-projector" }, pages).orientation, "portrait");
   const range = { ...good, usage: { from: "2026-11-15", to: "2026-11-17" } };
   assert.equal(buildPushPayload(range, pages).useAt, "2026-11-15/2026-11-17");
 });
