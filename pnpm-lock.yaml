@@ -11,6 +11,9 @@ importers:
       '@canva/design':
         specifier: ^2.14.0
         version: 2.14.0(@canva/error@2.2.2)
+      '@canva/intents':
+        specifier: ^2.8.0
+        version: 2.8.0(@canva/error@2.2.2)
       '@canva/platform':
         specifier: ^2.2.3
         version: 2.2.3(@canva/error@2.2.2)
@@ -31,6 +34,11 @@ packages:
 
   '@canva/error@2.2.2':
     resolution: {integrity: sha512-QYZ+Cq9qH1oHtCn/CHJDqhrITep9QmvaQoJcn01yIGxijeDc/1u5AT0vyAJoVMRYVs48pErbB7bjqDttkK/EPg==}
+
+  '@canva/intents@2.8.0':
+    resolution: {integrity: sha512-cOMzqOd00E8Z2HmsnSYsX+3ZHN+R9G1fr2dO16w8t24GiBjPRj1KbmjGV/hrgtrN9C0sZIfCPoVpIEuxRyozhg==}
+    peerDependencies:
+      '@canva/error': ^2.0.0
 
   '@canva/platform@2.2.3':
     resolution: {integrity: sha512-qDvj7YKOYWDzxWyTyCjCZqpbvAUurdFNHyUqihDMaD9g6y3gXypssdfuYYIyOAaxtpGi8yDywcsbeyx1xj7O7g==}
@@ -446,6 +454,10 @@ snapshots:
       '@canva/error': 2.2.2
 
   '@canva/error@2.2.2': {}
+
+  '@canva/intents@2.8.0(@canva/error@2.2.2)':
+    dependencies:
+      '@canva/error': 2.2.2
 
   '@canva/platform@2.2.3(@canva/error@2.2.2)':
     dependencies:
