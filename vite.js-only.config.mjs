@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 
-// One JavaScript file (CSS inlined, no chunks, no html) for the Canva app upload.
+// One classic-script JavaScript file (IIFE, CSS inlined, no chunks, no html) for the Canva app upload.
 export default defineConfig({
   build: {
     target: "es2022",
@@ -9,7 +9,8 @@ export default defineConfig({
     sourcemap: false,
     lib: {
       entry: "src/canva-entry.mjs",
-      formats: ["es"],
+      formats: ["iife"],
+      name: "CanvaPiecoApp",
       fileName: () => "canva-pieco-app.js",
     },
     rollupOptions: { output: { inlineDynamicImports: true } },

@@ -1307,3 +1307,8 @@ document.addEventListener("DOMContentLoaded", render);
 if (document.readyState === "complete" || document.readyState === "interactive") {
   render();
 }
+
+/** Renders into #app once it exists. The Canva bundle may evaluate this module before the intent creates #app. */
+export function mount() {
+  render();
+}

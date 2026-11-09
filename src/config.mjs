@@ -5,7 +5,8 @@
  * readable by everybody who can open the app, so for a shared app leave `VITE_GATEWAY_API_KEY`
  * empty and let each operator enter theirs in Settings.
  */
-const viteEnv = typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : null;
+// Plain `import.meta.env` so Vite replaces it whole: Canva runs the upload as a classic script, where `import.meta` is a syntax error.
+const viteEnv = import.meta.env ?? null;
 const env = viteEnv || (typeof process !== "undefined" ? process.env : {});
 
 const STORAGE_KEY = "canva-pieco-app.settings";
