@@ -31,6 +31,8 @@ export const TARGETS = [
     width: 1920,
     height: 1080,
     enabled: true,
+    // Overlays keyed over the stream keep their transparent background.
+    transparent: true,
   },
   {
     id: "saarnavideo",
