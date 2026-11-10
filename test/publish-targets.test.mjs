@@ -9,11 +9,13 @@ import {
 
 const good = { targetId: "piprogram-atem", name: "Sunnuntai 15.11.", usage: { from: "2026-11-15" } };
 
-test("targets: PiGraphics is landscape 1080p only; vertical is 1080x1920; Saarnavideo is disabled", () => {
+test("targets: PiGraphics is landscape 1080p only; vertical is the Epson 10:16 (1200x1920); Saarnavideo is disabled", () => {
   const graphics = targetById("pigraphics-stream");
   assert.equal(graphics.orientation, "landscape");
   assert.equal([graphics.width, graphics.height].join("x"), "1920x1080");
-  assert.equal(targetById("piprogram-vertical-projector").height, 1920);
+  const vertical = targetById("piprogram-vertical-projector");
+  assert.equal([vertical.width, vertical.height].join("x"), "1200x1920");
+  assert.equal(vertical.width / vertical.height, 10 / 16);
   assert.equal(targetById("saarnavideo").enabled, false);
   assert.ok(TARGETS.length >= 4);
 });
