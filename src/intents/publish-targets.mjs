@@ -20,7 +20,8 @@ export const TARGETS = [
     id: "piprogram-vertical-projector",
     displayName: "PiProgram → vertical projector",
     orientation: "vertical",
-    width: 1080,
+    // Epson projector, rotated: 10:16.
+    width: 1200,
     height: 1920,
     enabled: true,
   },

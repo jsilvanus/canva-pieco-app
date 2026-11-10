@@ -29,9 +29,9 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
         displayName: "Slides",
         fileCount: { min: 1 },
         accepts: {
-          image: target.transparent
-            ? { format: "png", aspectRatio: { exact: target.width / target.height }, allowTransparentBackground: true }
-            : { format: "png", aspectRatio: { exact: target.width / target.height } },
+          // Any design size is accepted: a size or ratio that does not match the target only gets a warning
+          // in the preview, so it never blocks publishing.
+          image: target.transparent ? { format: "png", allowTransparentBackground: true } : { format: "png" },
         },
       },
     ],
