@@ -21,7 +21,7 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
   const settings = decodePublishRef(state.publishRef);
   const previews = state.previewMedia.flatMap((media) => media.previews);
   const sized = previews.filter((p): p is Preview & { widthPx: number; heightPx: number } => "widthPx" in p);
-  const mismatched = target ? sized.filter((p) => p.widthPx * target.height !== p.heightPx * target.width) : [];
+  const mismatched = target ? sized.filter((p) => Math.abs(p.widthPx * target.height - p.heightPx * target.width) > 0.01 * p.heightPx * target.width) : [];
   const columns = target?.orientation === "vertical" ? 3 : 2;
 
   return (
@@ -33,7 +33,7 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
           <Alert tone="warn">
             {intl.formatMessage(
               {
-                defaultMessage: "The design is {width} × {height} px. Canva exports the design at its own size, so resize it to {targetWidth} × {targetHeight} px for this target.",
+                defaultMessage: "The design is {width} × {height} px. Canva exports the design at its own size, so for this target a size like {targetWidth} × {targetHeight} px is best. You can still publish.",
                 description: "Warning when the design size does not match the publish target",
               },
               { width: mismatched[0].widthPx, height: mismatched[0].heightPx, targetWidth: target.width, targetHeight: target.height },
