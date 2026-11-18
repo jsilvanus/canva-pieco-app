@@ -15,7 +15,7 @@ export const TARGETS = [
     width: 1920,
     height: 1080,
     enabled: true,
-    // Transparent areas are kept; piprogram fills them when it prepares the feed.
+    // ATEM: transparent areas are kept so a key colour can replace them. The projector target keeps the normal background.
     transparent: true,
   },
   {
@@ -26,7 +26,6 @@ export const TARGETS = [
     width: 1200,
     height: 1920,
     enabled: true,
-    transparent: true,
   },
   {
     id: "pigraphics-stream",
