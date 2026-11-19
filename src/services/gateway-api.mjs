@@ -430,6 +430,54 @@ export async function getGatewayStatus(pipelineId = "pipgm1") {
   }
 }
 
+const PI_INPUT = { pi1: 3, pi2: 4 };
+const PROJECTOR_OUTPUT = { left: 1, right: 2 };
+
+/**
+ * The steps of a "Go live" action list: save the slides as the feed's playlist, send the feed to a Pi output,
+ * send that Pi output to the left (1) or right (2) projector, cue the first slide, then fade to black or not.
+ * The gateway accepts only these step kinds from Canva and checks every value again.
+ */
+export function buildGoLiveSteps({ itemId, title, feed, piOutput, projector, ftb }) {
+  const pipeline = String(feed || "").toUpperCase();
+  if (!/^PIPGM[1-3]$/.test(pipeline)) throw new Error("Choose a Pi Program feed (1 to 3).");
+  if (!itemId) throw new Error("The slides have no library item yet. Push them again.");
+  if (!PI_INPUT[piOutput]) throw new Error("Choose the Pi output (Pi 1 or Pi 2).");
+  if (projector !== "none" && !PROJECTOR_OUTPUT[projector]) throw new Error("Choose the left or the right projector.");
+  const feedName = `PiPGM${pipeline.slice(-1)}`;
+  const steps = [
+    { action: "pipgm:playlist-set", params: { feed: feedName, itemIds: [itemId], ...(title ? { name: String(title).slice(0, 120) } : {}) } },
+    { action: "pipgm:route", params: { feed: feedName, output: piOutput } },
+  ];
+  if (projector !== "none") steps.push({ action: "matrix:route", params: { input: PI_INPUT[piOutput], output: PROJECTOR_OUTPUT[projector] } });
+  steps.push({ action: "pipgm:control", params: { feed: feedName, action: "gotoItem", itemIndex: 0 } });
+  steps.push({ action: "pipgm:ftb", params: { feed: feedName, on: Boolean(ftb) } });
+  return steps;
+}
+
+/**
+ * Saves the Go live action list in the gateway and returns it with the link that runs it. The plugin does not
+ * run the list: the link opens picontrol on the church network, which does.
+ * Resolves with { id, name, expiresAt, runPath, link }; `link` is a full URL when the gateway or VITE_PICONTROL_URL knows where picontrol is.
+ */
+export async function createGoLiveList({ itemId, title, feed, piOutput, projector, ftb }) {
+  const steps = buildGoLiveSteps({ itemId, title, feed, piOutput, projector, ftb });
+  const name = `Go live: ${title || "Canva slides"}`.slice(0, 120);
+  let list;
+  try {
+    list = await apiRequest("/api/v1/canva/action-lists", { method: "POST", body: JSON.stringify({ name, steps }) });
+  } catch (err) {
+    if (CONFIG.isDev && !(err instanceof GatewayError && err.status >= 400 && err.status < 500)) {
+      console.warn("[canva-pieco-app] Gateway unreachable in dev mode - simulating the Go live list:", err.message);
+      const id = `sim_${Date.now()}`;
+      return { id, name, steps, runPath: `/run/${id}`, link: null, expiresAt: null, isSimulated: true };
+    }
+    throw err;
+  }
+  const link = list.link || (CONFIG.picontrolUrl && list.runPath ? `${CONFIG.picontrolUrl}${list.runPath}` : null);
+  return { ...list, link };
+}
+
 /** Progress of the gateway task: the first 30 % is the download, the rest Pi Program's unpacking and thumbnails. */
 export function describeTask(task) {
   const percent = 30 + Math.round(Math.max(0, Math.min(1, task.progress ?? 0)) * 69);
