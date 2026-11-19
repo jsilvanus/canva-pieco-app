@@ -2,6 +2,8 @@
 export type Task = {
   taskId: string;
   presentationId?: string;
+  /** The piprogram library item of the pushed slides (what a playlist holds). */
+  itemId?: string | null;
   state: string;
   progress?: number;
   pageCount?: number;
@@ -45,3 +47,8 @@ export function pushCanvaGraphic(args: {
 export function setCanvaGraphicOffAir(args?: { keyer?: string; index?: number }): Promise<unknown>;
 export function getGatewayStatus(pipelineId?: string): Promise<{ isSimulated?: boolean }>;
 export function describeTask(task: Task): { percent: number; label: string };
+export type GoLiveStep = { action: string; params: Record<string, unknown> };
+export type GoLiveOptions = { itemId: string; title?: string; feed: string; piOutput: string; projector: string; ftb: boolean };
+export type GoLiveList = { id: string; name: string; expiresAt: string | null; runPath: string; link: string | null; isSimulated?: boolean };
+export function buildGoLiveSteps(options: GoLiveOptions): GoLiveStep[];
+export function createGoLiveList(options: GoLiveOptions): Promise<GoLiveList>;

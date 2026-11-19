@@ -59,6 +59,8 @@ export const CONFIG = Object.freeze({
   get gatewayUrl() {
     return normalizeGatewayUrl(readStored().gatewayUrl) || (env.VITE_GATEWAY_URL || "https://gateway.local:8443").replace(/\/+$/, "");
   },
+  /** Where picontrol runs, for the run link of a Go live list when the gateway does not give a full link (VITE_PICONTROL_URL). */
+  picontrolUrl: (env.VITE_PICONTROL_URL || "").replace(/\/+$/, ""),
   get gatewayApiKey() {
     const stored = readStored();
     return typeof stored.gatewayApiKey === "string" && stored.gatewayUrl ? stored.gatewayApiKey : env.VITE_GATEWAY_API_KEY || "";

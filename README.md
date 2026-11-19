@@ -66,6 +66,7 @@ Target host, API key, and plugin branding are defaults baked into the static bun
 | :--- | :--- | :--- | :--- |
 | `VITE_APP_NAME` | Plugin display title shown in Canva | `Church Slide Bridge` | `"Keskuskirkko Slide Bridge"` |
 | `VITE_GATEWAY_URL` | Base HTTPS URL of Pi Gateway | `https://gateway.local:8443` | `"https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443"` |
+| `VITE_PICONTROL_URL` | Optional: where picontrol runs, used for the Go live link when the gateway does not send a full one (set `PIGATEWAY_PICONTROL_URL` there instead) | `""` | `"https://picontrol.example"` |
 | `VITE_GATEWAY_API_KEY`| Scoped API Token for Pi Gateway | `""` | `"secret-canva-api-key"` |
 
 See `.env.example` for reference.
@@ -136,3 +137,8 @@ This project is an integral component of the [Pi Production Ecosystem](file:///d
 > [!IMPORTANT]
 > Any changes to this repository's architectural role, API routes, communication protocols, exposed ports, dependencies, or runtime status **must be documented in the central `piecosystem` coordination repository** (`docs/projects-catalog.md` and `docs/inter-service-matrix.md`).
 > Always verify cross-system health with `npm run status` in `D:\piecosystem`.
+
+
+## Go live (play options)
+
+After the slides are pushed, the **Play** tab asks for the feed (Pi Program 1 to 3), the Pi output (Pi 1 or Pi 2), the projector (left = 1, right = 2, or none) and whether to start from black. **Go live** saves an action list through `POST /api/v1/canva/action-lists` (playlist, feed to Pi output, Pi output to projector, cue first slide, fade to black on or off) and opens the returned link in picontrol, which runs the list on the church network. The plugin never runs the list itself. Canva's `requestOpenExternalUrl` may need the picontrol domain listed as an allowed external URL in the Canva developer portal. Not tried in Canva.

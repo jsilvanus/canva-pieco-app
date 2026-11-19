@@ -5,3 +5,4 @@ export function exportDesignPages(): Promise<{
   title: string;
   exportBlobs: { url: string; pageNumber: number; name?: string }[];
 }>;
+export function openExternalUrl(url: string): Promise<boolean>;

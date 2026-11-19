@@ -23,30 +23,31 @@ import {
   TextInput,
   Title,
 } from "@canva/app-ui-kit";
-import { exportDesignPages, isRunningInCanva } from "../services/canva-sdk.mjs";
+import { exportDesignPages, isRunningInCanva, openExternalUrl } from "../services/canva-sdk.mjs";
 import {
   controlSlide,
+  createGoLiveList,
   describeTask,
   parseUseAt,
   pushContent,
   setProjectorPicMute,
-  setupPresentation,
   toggleFtb,
   waitForTask,
 } from "../services/gateway-api.mjs";
-import type { Task } from "../services/gateway-api.mjs";
+import type { GoLiveList, Task } from "../services/gateway-api.mjs";
 import type { Page, PanelProps } from "./types";
 
 type Step = "push" | "setup" | "live";
-type Staged = { presentationId: string; title: string; pages: Page[] };
-type Setup = { piOutput: string; pipelineId: string; matrixRoute: string; unblankProjectors: boolean; cueSlide: number | null };
-type Live = { pipelineId: string; matrixRoute: string; currentSlide: number; totalSlides: number; ftb: boolean; picMute: boolean; pages: Page[] };
+type Staged = { presentationId: string; itemId: string; title: string; pages: Page[] };
+/** The play options: which feed, which Pi output, which projector (left = 1, right = 2) and whether to start from black. */
+type Setup = { pipelineId: string; piOutput: string; projector: string; ftb: boolean };
+type Live = { pipelineId: string; currentSlide: number; totalSlides: number; ftb: boolean; picMute: boolean; pages: Page[] };
 type NavAction = "next" | "prev" | "gotoPage";
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "");
 
-const INITIAL_SETUP: Setup = { piOutput: "", pipelineId: "pipgm1", matrixRoute: "both_projectors", unblankProjectors: true, cueSlide: 1 };
+const INITIAL_SETUP: Setup = { pipelineId: "pipgm1", piOutput: "pi1", projector: "left", ftb: false };
 
-/** Slides: 1. push the design to church storage, 2. set up the pipeline, 3. drive the slides live. */
+/** Slides: 1. push the design to church storage, 2. play options and Go live, 3. drive the slides live. */
 export function SlidesView({ notify, showProgress, clearProgress, busy, active, onPipelineChange }: PanelProps & { onPipelineChange: (pipelineId: string) => void }) {
   const intl = useIntl();
   const [step, setStep] = useState<Step>("push");
@@ -55,6 +56,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
   const [setup, setSetup] = useState<Setup>(INITIAL_SETUP);
   const [settingUp, setSettingUp] = useState(false);
   const [live, setLive] = useState<Live | null>(null);
+  const [golive, setGolive] = useState<GoLiveList | null>(null);
 
   const handlePush = async () => {
     let useAt = null;
@@ -87,7 +89,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       showTask(task);
       // The gateway downloads the pages, Pi Program unpacks them and makes the thumbnails.
       const finished = await waitForTask(task.taskId, { onUpdate: showTask });
-      setStaged({ presentationId: finished.presentationId || task.presentationId || "", title: exported.title || "Canva Presentation", pages });
+      setStaged({ presentationId: finished.presentationId || task.presentationId || "", itemId: finished.itemId || task.itemId || "", title: exported.title || "Canva Presentation", pages });
       clearProgress();
       setStep("setup");
       notify(intl.formatMessage({ defaultMessage: "Sent {count, plural, one {# slide} other {# slides}} to church storage.", description: "Success after the upload" }, { count: pages.length }), "positive");
@@ -97,32 +99,40 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
     }
   };
 
-  const handleApplySetup = async () => {
+  const handleGoLive = async () => {
     if (!staged) return;
     setSettingUp(true);
     try {
-      const result = await setupPresentation({
-        presentationId: staged.presentationId,
-        pipelineId: setup.pipelineId,
-        matrixRoute: setup.matrixRoute,
-        unblankProjectors: setup.unblankProjectors,
-        cueSlide: setup.cueSlide,
-        piOutput: setup.piOutput || null,
-      });
+      // The plugin only saves the list. The link opens picontrol on the church network, which runs it once.
+      const list = await createGoLiveList({ itemId: staged.itemId, title: staged.title, feed: setup.pipelineId, piOutput: setup.piOutput, projector: setup.projector, ftb: setup.ftb });
+      setGolive(list);
       setLive({
         pipelineId: setup.pipelineId,
-        matrixRoute: setup.matrixRoute,
-        currentSlide: setup.cueSlide || 1,
+        currentSlide: 1,
         totalSlides: staged.pages.length || 1,
-        ftb: false,
-        picMute: result.picMute ?? false,
+        ftb: setup.ftb,
+        picMute: false,
         pages: staged.pages,
       });
       onPipelineChange(setup.pipelineId);
       setStep("live");
-      notify(intl.formatMessage({ defaultMessage: "Presentation is live on the displays.", description: "Success after the pipeline is set up" }), "positive");
+      if (list.link) {
+        const opened = await openExternalUrl(list.link);
+        notify(
+          opened
+            ? intl.formatMessage({ defaultMessage: "Opening the control page. It puts the slides on the displays.", description: "Success after Go live saved the list and opened picontrol" })
+            : intl.formatMessage({ defaultMessage: "Ready. Open the link below to put the slides on the displays.", description: "Notice when the control page could not be opened automatically" }),
+          opened ? "positive" : "info",
+        );
+      } else {
+        notify(
+          intl.formatMessage({ defaultMessage: "The list is saved, but the gateway did not give a link to the control page.", description: "Warning when Go live has no link to open" }),
+          "warn",
+          8000,
+        );
+      }
     } catch (err) {
-      notify(errorMessage(err) || intl.formatMessage({ defaultMessage: "Failed to set up the presentation.", description: "Generic setup error" }), "critical");
+      notify(errorMessage(err) || intl.formatMessage({ defaultMessage: "Failed to save the Go live list.", description: "Generic Go live error" }), "critical");
     } finally {
       setSettingUp(false);
     }
@@ -132,7 +142,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
   const available: Record<Step, boolean> = { push: true, setup: Boolean(staged), live: Boolean(live) };
   const tabLabel = {
     push: intl.formatMessage({ defaultMessage: "1. Push", description: "Tab for sending the design to the church" }),
-    setup: intl.formatMessage({ defaultMessage: "2. Setup", description: "Tab for the presentation setup" }),
+    setup: intl.formatMessage({ defaultMessage: "2. Play", description: "Tab for the play options and Go live" }),
     live: intl.formatMessage({ defaultMessage: "3. Live", description: "Tab for live slide control" }),
   };
 
@@ -149,8 +159,8 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       {step === "push" && (
         <PushStep serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} onPush={handlePush} onNext={() => setStep("setup")} />
       )}
-      {step === "setup" && staged && <SetupStep staged={staged} setup={setup} onChange={setSetup} busy={settingUp} onApply={handleApplySetup} />}
-      {step === "live" && live && <LiveStep live={live} active={active} onChange={setLive} notify={notify} onReconfigure={() => setStep("setup")} />}
+      {step === "setup" && staged && <SetupStep staged={staged} setup={setup} onChange={setSetup} busy={settingUp} onApply={handleGoLive} />}
+      {step === "live" && live && <LiveStep live={live} active={active} onChange={setLive} notify={notify} onReconfigure={() => setStep("setup")} golive={golive} />}
     </Rows>
   );
 }
@@ -207,7 +217,7 @@ function PushStep({
           </Text>
           <Thumbnails pages={staged.pages} />
           <Button variant="secondary" onClick={onNext} stretch>
-            {intl.formatMessage({ defaultMessage: "Continue to setup", description: "Moves to the setup step" })}
+            {intl.formatMessage({ defaultMessage: "Continue to play options", description: "Moves to the play options step" })}
           </Button>
         </Rows>
       )}
@@ -230,59 +240,36 @@ function SetupStep({
 }) {
   const intl = useIntl();
   const update = (patch: Partial<Setup>) => onChange((prev) => ({ ...prev, ...patch }));
+  const noItem = !staged.itemId;
 
   return (
     <Rows spacing="2u">
       <Text>
         {intl.formatMessage(
           {
-            defaultMessage: "Choose which Pi Program pipeline shows the {count, plural, one {# slide} other {# slides}}, where the Pi Matrix routes it, and the projector options.",
-            description: "Explains the setup step",
+            defaultMessage: "Choose where the {count, plural, one {# slide} other {# slides}} should be shown. Go live saves these choices; the control page at the church then puts the slides on the displays.",
+            description: "Explains the play options step",
           },
           { count: staged.pages.length },
         )}
       </Text>
       <FormField
-        label={intl.formatMessage({ defaultMessage: "Presentation pipeline", description: "Label of the pipeline choice" })}
+        label={intl.formatMessage({ defaultMessage: "Feed", description: "Label of the Pi Program feed choice" })}
         value={setup.pipelineId}
         control={(props) => (
           <RadioGroup
             {...props}
             onChange={(pipelineId) => update({ pipelineId })}
             options={[
-              {
-                value: "pipgm1",
-                label: intl.formatMessage({ defaultMessage: "Pi Program 1", description: "First pipeline" }),
-                description: intl.formatMessage({ defaultMessage: "Primary service pipeline", description: "What the first pipeline is for" }),
-              },
-              {
-                value: "pipgm2",
-                label: intl.formatMessage({ defaultMessage: "Pi Program 2", description: "Second pipeline" }),
-                description: intl.formatMessage({ defaultMessage: "Secondary or split pipeline", description: "What the second pipeline is for" }),
-              },
+              { value: "pipgm1", label: intl.formatMessage({ defaultMessage: "Pi Program 1", description: "First feed" }) },
+              { value: "pipgm2", label: intl.formatMessage({ defaultMessage: "Pi Program 2", description: "Second feed" }) },
+              { value: "pipgm3", label: intl.formatMessage({ defaultMessage: "Pi Program 3", description: "Third feed" }) },
             ]}
           />
         )}
       />
       <FormField
-        label={intl.formatMessage({ defaultMessage: "Pi Matrix destination", description: "Label of the matrix routing choice" })}
-        value={setup.matrixRoute}
-        control={(props) => (
-          <Select
-            {...props}
-            stretch
-            onChange={(matrixRoute) => update({ matrixRoute })}
-            options={[
-              { value: "both_projectors", label: intl.formatMessage({ defaultMessage: "Both projectors (stage left and right)", description: "Route to both projectors" }) },
-              { value: "landscape_screen", label: intl.formatMessage({ defaultMessage: "Landscape screen (side wall)", description: "Route to the side wall screen" }) },
-              { value: "all_displays", label: intl.formatMessage({ defaultMessage: "All church displays", description: "Route to every display" }) },
-              { value: "none", label: intl.formatMessage({ defaultMessage: "Keep the current routing", description: "Do not change the matrix" }) },
-            ]}
-          />
-        )}
-      />
-      <FormField
-        label={intl.formatMessage({ defaultMessage: "Pi output (Atlona input)", description: "Label of the Pi output choice" })}
+        label={intl.formatMessage({ defaultMessage: "Pi output", description: "Label of the Pi output choice" })}
         value={setup.piOutput}
         control={(props) => (
           <Select
@@ -290,27 +277,40 @@ function SetupStep({
             stretch
             onChange={(piOutput) => update({ piOutput })}
             options={[
-              { value: "", label: intl.formatMessage({ defaultMessage: "Gateway default", description: "Let the gateway pick the Pi output" }) },
               { value: "pi1", label: intl.formatMessage({ defaultMessage: "Pi 1 (Atlona input 3)", description: "First Pi output" }) },
               { value: "pi2", label: intl.formatMessage({ defaultMessage: "Pi 2 (Atlona input 4)", description: "Second Pi output" }) },
             ]}
           />
         )}
       />
-      <Checkbox
-        checked={setup.unblankProjectors}
-        onChange={(_value: unknown, checked: boolean) => update({ unblankProjectors: checked })}
-        label={intl.formatMessage({ defaultMessage: "Unblank the projectors", description: "Turns projector picture mute off when going live" })}
-        description={intl.formatMessage({ defaultMessage: "Opens the projector beams when the presentation goes live.", description: "Explains unblanking" })}
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Projector", description: "Label of the projector choice" })}
+        value={setup.projector}
+        control={(props) => (
+          <RadioGroup
+            {...props}
+            onChange={(projector) => update({ projector })}
+            options={[
+              { value: "left", label: intl.formatMessage({ defaultMessage: "Left projector", description: "Projector 1" }) },
+              { value: "right", label: intl.formatMessage({ defaultMessage: "Right projector", description: "Projector 2" }) },
+              { value: "none", label: intl.formatMessage({ defaultMessage: "Not to a projector", description: "Leave the projectors as they are" }) },
+            ]}
+          />
+        )}
       />
       <Checkbox
-        checked={setup.cueSlide === 1}
-        onChange={(_value: unknown, checked: boolean) => update({ cueSlide: checked ? 1 : null })}
-        label={intl.formatMessage({ defaultMessage: "Cue slide 1 now", description: "Shows the first slide right away" })}
-        description={intl.formatMessage({ defaultMessage: "Puts the first slide on the pipeline stage.", description: "Explains cueing" })}
+        checked={setup.ftb}
+        onChange={(_value: unknown, checked: boolean) => update({ ftb: checked })}
+        label={intl.formatMessage({ defaultMessage: "Start with fade to black", description: "The feed stays black until it is faded in" })}
+        description={intl.formatMessage({ defaultMessage: "The slides are ready behind black. Fade in from the control page.", description: "Explains starting with fade to black" })}
       />
-      <Button variant="primary" onClick={onApply} loading={busy} disabled={busy} stretch>
-        {intl.formatMessage({ defaultMessage: "Set up and go live", description: "Applies the setup and starts the presentation" })}
+      {noItem && (
+        <Text size="small" tone="critical">
+          {intl.formatMessage({ defaultMessage: "These slides are not in the church library yet. Push them again first.", description: "Shown when the push gave no library item" })}
+        </Text>
+      )}
+      <Button variant="primary" onClick={onApply} loading={busy} disabled={busy || noItem} stretch>
+        {intl.formatMessage({ defaultMessage: "Go live", description: "Saves the play options and opens the control page" })}
       </Button>
     </Rows>
   );
@@ -322,12 +322,14 @@ function LiveStep({
   onChange,
   notify,
   onReconfigure,
+  golive,
 }: {
   live: Live;
   active: boolean;
   onChange: React.Dispatch<React.SetStateAction<Live | null>>;
   notify: PanelProps["notify"];
   onReconfigure: () => void;
+  golive: GoLiveList | null;
 }) {
   const intl = useIntl();
   const [controlling, setControlling] = useState(false);
@@ -402,6 +404,11 @@ function LiveStep({
       <Text size="small" tone="secondary">
         {intl.formatMessage({ defaultMessage: "Live on {pipeline}", description: "Which pipeline is live" }, { pipeline: live.pipelineId.toUpperCase() })}
       </Text>
+      {golive?.link && (
+        <Button variant="secondary" onClick={() => openExternalUrl(golive.link as string)} stretch>
+          {intl.formatMessage({ defaultMessage: "Open the control page", description: "Opens picontrol again from the live step" })}
+        </Button>
+      )}
       <Box background="neutralSubtle" borderRadius="large" padding="2u">
         <Rows spacing="0.5u" align="center">
           <Text size="small" tone="secondary">
@@ -443,7 +450,7 @@ function LiveStep({
         </Column>
         <Column>
           <Button variant="tertiary" onClick={onReconfigure} stretch>
-            {intl.formatMessage({ defaultMessage: "Pipeline settings", description: "Returns to the setup step" })}
+            {intl.formatMessage({ defaultMessage: "Play options", description: "Returns to the play options step" })}
           </Button>
         </Column>
       </Columns>
