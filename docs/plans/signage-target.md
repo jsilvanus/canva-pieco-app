@@ -1,12 +1,14 @@
-# Plan: "Signage (VPS)" publish target
+# Plan: "Signage (Sissi)" publish target
 
 Status: **plan, not built** (2026-11-19). No code changes in this PR.
+
+Naming: the signage project is called **Sissi** (SiSSi in the signage roadmap). It is deployed as a Docker image behind Traefik on the VPS, so the app only needs its HTTPS base URL (a Traefik route); nothing in this plan depends on how the container is built. In the UI the target is labelled "Signage (Sissi)"; the code id stays `signage`.
 
 The contract is [simple-smart-signage `docs/plans/step-1-web-signage.md`](https://github.com/jsilvanus/simple-smart-signage/pull/4), sections 4 (API) and 8 (what the Canva app needs). This document says how the app meets it. Site data (the signage base URL, Canva team id, keys) stays out of this public repository: it lives in the private keskuskirkko repository and in the operator's own settings.
 
 ## 1. What changes for the user
 
-A fifth target, "Signage (VPS)", in the Content Publisher's output-type list next to PiProgram and PiGraphics. It sends slides (and video pages) straight to the signage service on the VPS. The Pi is not involved, so it works when the Pi is down and from outside the church network.
+A fifth target, "Signage (Sissi)", in the Content Publisher's output-type list next to PiProgram and PiGraphics. It sends slides (and video pages) straight to Sissi, the signage service on the VPS. The Pi is not involved, so it works when the Pi is down and from outside the church network.
 
 Fields shown **only when signage is selected**:
 
@@ -97,4 +99,4 @@ These are small and optional; the app works without them, but they remove guessw
 
 ## 8. Not in scope
 
-Creating or deleting screens, reordering or removing entries (the admin page does that), schedules, scheduling by date, audio on video entries, and the Pi-side targets. README gets a short "Signage (VPS)" section when step 4 lands.
+Creating or deleting screens, reordering or removing entries (the admin page does that), schedules, scheduling by date, audio on video entries, and the Pi-side targets. README gets a short "Signage (Sissi)" section when step 4 lands.
