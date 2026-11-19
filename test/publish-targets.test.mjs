@@ -33,7 +33,9 @@ test("settings: a range needs an ordered pair of dates", () => {
 
 test("settings: missing name, missing date, unknown or disabled target are refused", () => {
   assert.deepEqual(validatePublishSettings({ ...good, name: "  " }).errors, ["name"]);
-  assert.deepEqual(validatePublishSettings({ ...good, usage: {} }).errors, ["date"]);
+  assert.deepEqual(validatePublishSettings({ ...good, usage: {} }).errors, ["permanent"]);
+  assert.deepEqual(validatePublishSettings({ ...good, usage: {}, permanent: true }), { validityState: "valid", errors: [] });
+  assert.deepEqual(validatePublishSettings({ ...good, usage: { to: "2026-11-15" } }).errors, ["date"]);
   assert.deepEqual(validatePublishSettings({ ...good, targetId: "nope" }).errors, ["target"]);
   assert.deepEqual(validatePublishSettings({ ...good, targetId: "saarnavideo" }).errors, ["target_disabled"]);
   assert.equal(validatePublishSettings({ ...good, name: "" }).validityState, "invalid_missing_required_fields");
@@ -48,6 +50,7 @@ test("push payload: single date becomes useAt, range becomes start/end, target i
     useAt: "2026-11-15",
     pages,
   });
+  assert.equal("useAt" in buildPushPayload({ ...good, usage: {}, permanent: true }, pages), false);
   assert.equal(buildPushPayload({ ...good, targetId: "piprogram-vertical-projector" }, pages).orientation, "portrait");
   const range = { ...good, usage: { from: "2026-11-15", to: "2026-11-17" } };
   assert.equal(buildPushPayload(range, pages).useAt, "2026-11-15/2026-11-17");

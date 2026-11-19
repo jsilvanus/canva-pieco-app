@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useIntl } from "react-intl";
-import { Alert, Badge, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
+import { Alert, Badge, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import type { DateObj } from "@canva/app-ui-kit";
 import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
@@ -78,6 +78,7 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
       {publishError != null && (
         <Alert tone="critical">
           {intl.formatMessage({ defaultMessage: "Publishing failed. Check the settings and try again.", description: "Shown after a failed publish" })}
+          {publishError ? intl.formatMessage({ defaultMessage: " Details: {detail}", description: "Detail of a failed publish" }, { detail: publishError }) : null}
         </Alert>
       )}
 
@@ -93,6 +94,7 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
         <Column>
           <FormField
             label={intl.formatMessage({ defaultMessage: "Used on", description: "Label of the first (or only) date the slides are used" })}
+            labelMarker="optional"
             value={fromIso(settings.usage?.from)}
             error={showErrors && errors.includes("date")}
             control={(props) => <DateInput {...props} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, from: toIso(d) } })} />}
@@ -110,6 +112,14 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           />
         </Column>
       </Columns>
+
+      {!settings.usage?.from && !settings.usage?.to && (
+        <Checkbox
+          label={intl.formatMessage({ defaultMessage: "No date: this is a permanent asset that stays in church storage until it is deleted", description: "Confirmation shown when no use date is given" })}
+          checked={settings.permanent === true}
+          onChange={(_, checked) => update({ permanent: checked })}
+        />
+      )}
     </Rows>
   );
 }
