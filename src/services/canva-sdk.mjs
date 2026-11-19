@@ -84,3 +84,24 @@ export async function exportDesignPages() {
     throw err;
   }
 }
+
+/**
+ * Opens a link in a new browser tab. Inside Canva the app cannot open windows itself: Canva asks the
+ * user and opens it (requestOpenExternalUrl). Outside Canva (a browser test) it is a plain window.open.
+ * Returns true when the link was opened, false when the user declined or it could not be opened.
+ */
+export async function openExternalUrl(url) {
+  if (!/^https?:\/\//i.test(String(url ?? ""))) return false;
+  if (!isRunningInCanva()) {
+    const opened = typeof window !== "undefined" && typeof window.open === "function" ? window.open(url, "_blank", "noopener") : null;
+    return Boolean(opened);
+  }
+  try {
+    const { requestOpenExternalUrl } = await import("@canva/platform");
+    const result = await requestOpenExternalUrl({ url });
+    return result?.status === "completed";
+  } catch (err) {
+    console.warn("[canva-pieco-app] Canva could not open the link:", err?.message);
+    return false;
+  }
+}
