@@ -8,6 +8,8 @@ import {
   waitForTask,
   describeTask,
   setupPresentation,
+  buildGoLiveSteps,
+  createGoLiveList,
   controlSlide,
   toggleFtb,
   setProjectorPicMute,
@@ -334,4 +336,33 @@ test("pushContent sends useAt, setupPresentation sends piOutput only when set", 
   assert.deepEqual(bodies[0].body.useAt, ["2026-11-08", "2026-11-15"]);
   assert.equal("piOutput" in bodies[1].body, false);
   assert.equal(bodies[2].body.piOutput, "pi2");
+});
+
+test("buildGoLiveSteps: playlist, feed to Pi output, Pi output to projector, cue, fade to black", () => {
+  const steps = buildGoLiveSteps({ itemId: "itm_1", title: "Sunday", feed: "pipgm2", piOutput: "pi2", projector: "right", ftb: true });
+  assert.deepEqual(steps, [
+    { action: "pipgm:playlist-set", params: { feed: "PiPGM2", itemIds: ["itm_1"], name: "Sunday" } },
+    { action: "pipgm:route", params: { feed: "PiPGM2", output: "pi2" } },
+    { action: "matrix:route", params: { input: 4, output: 2 } },
+    { action: "pipgm:control", params: { feed: "PiPGM2", action: "gotoItem", itemIndex: 0 } },
+    { action: "pipgm:ftb", params: { feed: "PiPGM2", on: true } },
+  ]);
+  const none = buildGoLiveSteps({ itemId: "i", feed: "pipgm1", piOutput: "pi1", projector: "none", ftb: false });
+  assert.equal(none.some((s) => s.action === "matrix:route"), false);
+  assert.throws(() => buildGoLiveSteps({ itemId: "", feed: "pipgm1", piOutput: "pi1", projector: "left", ftb: false }), /Push them again/);
+  assert.throws(() => buildGoLiveSteps({ itemId: "i", feed: "pipgm9", piOutput: "pi1", projector: "left", ftb: false }), /feed/);
+  assert.throws(() => buildGoLiveSteps({ itemId: "i", feed: "pipgm1", piOutput: "pi3", projector: "left", ftb: false }), /Pi output/);
+});
+
+test("createGoLiveList posts the steps to the Canva action list route and returns the link", async () => {
+  const seen = [];
+  setFetchImpl(async (url, init = {}) => {
+    seen.push({ path: new URL(url).pathname, method: init.method, body: JSON.parse(init.body) });
+    return new Response(JSON.stringify({ id: "u-1", runPath: "/run/u-1", link: "https://pc.example/run/u-1", expiresAt: "x" }), { status: 201, headers: { "content-type": "application/json" } });
+  });
+  const list = await createGoLiveList({ itemId: "itm_1", title: "Sunday", feed: "pipgm1", piOutput: "pi1", projector: "left", ftb: false });
+  assert.equal(list.link, "https://pc.example/run/u-1");
+  assert.equal(seen[0].path, "/api/v1/canva/action-lists");
+  assert.equal(seen[0].method, "POST");
+  assert.equal(seen[0].body.steps.length, 5);
 });
