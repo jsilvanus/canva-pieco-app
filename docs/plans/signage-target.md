@@ -60,7 +60,7 @@ The upload bundle stays one classic script without `import.meta`; the new module
 
 - `Authorization: Bearer <auth.getCanvaUserToken()>` on every call, exactly as `gateway-api.mjs` does now (`canvaUserToken()`). No key in the bundle. Outside Canva (browser test) the optional push key from Settings is used, mirroring the gateway client.
 - Error mapping to user text: 401 `UNAUTHORIZED` "Sign in to Canva again"; 403 `TEAM_NOT_ALLOWED` "Your Canva team is not allowed to publish to signage"; 503 `AUTH_NOT_CONFIGURED` "Signage is not set up yet"; 404 `SCREEN_NOT_FOUND` refreshes the screen list; 422 codes show the service's message; post-202 failure codes are listed in section 6; 429 `BUSY` "Signage is busy, try again in a moment". 24 h push records mean a reload mid-publish can still poll the same `pushId`.
-- CORS: the Canva app origin must be in the signage service's `SIGNAGE_CORS_ORIGINS` (and in pigateway's tunnel list for the Pi targets). Both are operator settings, not code here. Canva's developer portal may also need the signage host in the app's allowed domains (decision 1 of the signage plan: a path on the existing host avoids growing that list).
+- CORS: the Canva app origin must be in the signage service's `SISSI_CORS_ORIGINS` (and in pigateway's tunnel list for the Pi targets). Both are operator settings, not code here. Canva's developer portal may also need the signage host in the app's allowed domains (decision 1 of the signage plan: a path on the existing host avoids growing that list).
 
 ## 5. Open question answered: one MP4 per video page, or one for the whole design?
 
@@ -102,3 +102,22 @@ Requests R1-R3 from the first draft are settled (simple-smart-signage PR #4, sec
 ## 8. Not in scope
 
 Creating or deleting screens, reordering or removing entries (the admin page does that), schedules, scheduling by date, audio on video entries, and the Pi-side targets. README gets a short "Signage (Sissi)" section when step 4 lands.
+
+## 9. Decisions and build tasks (review of 2026-11-19; override anything above)
+
+- **Contract:** the machine-readable source is `openapi/sissi-v1.yaml` in simple-smart-signage (branch `step-1-impl`). The client, its fake server in tests and the error mapping are built from it. New codes there: `SCREEN_EXISTS`, `RATE_LIMITED`, `INTERRUPTED` (show as "The publish was interrupted, try again"), `INVALID_SCREEN`.
+- **UI label:** "Signage (Sissi)" everywhere; the PR title wording "Signage (VPS)" is retired. Code id stays `signage`.
+- **Per-page seconds:** the default design puts the per-page fields in the **preview UI** (`preview_ui.tsx`), which is known to see the pages. The settings form keeps screen, mode, "set all" and the confirmation. Spike S2 may move the per-page fields to settings later; do not build for that.
+- **Base URL:** `signageUrl` includes the path prefix (for example `https://host/signage`); the client appends `/api/v1`.
+- **Spike S1 (real Canva account) is Juha's task** and is not done by agents. Until its result is recorded here, the code follows section 5: no assumption about files per page; `kind` omitted unless certain.
+- **Brand vs team:** the service checks the brand; user-facing text keeps saying "Canva team".
+
+### Build tasks (Sonnet-class agents, one branch `signage-target`, tests with `node --test`, no real network)
+
+1. **T1 Client:** `src/services/signage-api.mjs` + `.d.mts`: `listScreens`, `pushSignage`, `getSignagePush`, `waitForSignagePush` (1 s poll, 10 min timeout, tolerate 3 failed polls), error mapping per section 4 and the new codes, Bearer from the Canva token, dev mock. Tests with a fake fetch driven by the OpenAPI examples. Owns `src/services/signage-api.*`, `test/signage-api.test.mjs`.
+2. **T2 Target and payload:** `signage` entry in `publish-targets.mjs` (`dynamicSize`, accepts image png + video mp4, enabled only with `signageUrl`), `validatePublishSettings` branch, `buildSignagePushPayload` (seconds only for images, `kind` only when certain). Owns `src/intents/publish-targets.*`, `test/publish-targets.test.mjs` additions. Runs in parallel with T1.
+3. **T3 Config:** `signageUrl` in `src/config.mjs` (+ `.d.mts`), Settings field, localStorage, https-only normalisation, `.env.example`. After T1/T2.
+4. **T4 UI:** `signage_fields.tsx`, `settings_ui.tsx`, `preview_ui.tsx`, `index.tsx` (`outputTypeFor`, `publishContent` flow of section 2), i18n strings. After T1-T3.
+5. **T5 Bundle and docs:** rebuild `dist-js` through the usual script (the file is committed in this repo), README "Signage (Sissi)" section stating it was never tested against the real service, tick the plan. After T4.
+
+After T1+T2 and again after T4 a reviewer agent checks the diff against this plan and the OpenAPI file.
