@@ -5,7 +5,8 @@
 // - PiProgram goes to the ATEM or to the vertical projector.
 // - PiGraphics is stream only, landscape 1080p only.
 // - Saarnavideo is a tentative target: shown, but disabled.
-// - Every target needs a name and a date (or a date range) for when it is used.
+// - Every target needs a name. The date (or date range) for when it is used is optional (Juha 2026-11-19);
+//   without one the settings form asks to confirm that the slides are a permanent asset.
 
 export const TARGETS = [
   {
@@ -66,8 +67,14 @@ export function validatePublishSettings(settings) {
   if (!String(settings?.name ?? "").trim()) errors.push("name");
 
   const from = settings?.usage?.from ?? "";
-  const to = settings?.usage?.to ?? from;
-  if (!DATE.test(from) || !DATE.test(to) || to < from) errors.push("date");
+  const toRaw = settings?.usage?.to ?? "";
+  if (!from && !toRaw) {
+    // No date: only fine when the user confirmed a permanent asset.
+    if (settings?.permanent !== true) errors.push("permanent");
+  } else {
+    const to = toRaw || from;
+    if (!DATE.test(from) || !DATE.test(to) || to < from) errors.push("date");
+  }
 
   return {
     validityState: errors.length === 0 ? "valid" : "invalid_missing_required_fields",
@@ -95,14 +102,14 @@ export function decodePublishRef(publishRef) {
  * the export package for that orientation.
  */
 export function buildPushPayload(settings, pages) {
-  const from = settings.usage.from;
-  const to = settings.usage.to ?? from;
+  const from = settings.usage?.from ?? "";
+  const to = settings.usage?.to || from;
   const target = targetById(settings.targetId);
   return {
     title: settings.name.trim(),
     target: settings.targetId,
     ...(target ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
-    useAt: from === to ? from : `${from}/${to}`,
+    ...(from ? { useAt: from === to ? from : `${from}/${to}` } : {}),
     pages,
   };
 }
