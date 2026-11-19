@@ -68,6 +68,7 @@ Target host, API key, and plugin branding are defaults baked into the static bun
 | `VITE_GATEWAY_URL` | Base HTTPS URL of Pi Gateway | `https://gateway.local:8443` | `"https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443"` |
 | `VITE_PICONTROL_URL` | Optional: where picontrol runs, used for the Go live link when the gateway does not send a full one (set `PIGATEWAY_PICONTROL_URL` there instead) | `""` | `"https://picontrol.example"` |
 | `VITE_GATEWAY_API_KEY`| Scoped API Token for Pi Gateway | `""` | `"secret-canva-api-key"` |
+| `VITE_SIGNAGE_URL` | Base HTTPS URL of the Sissi signage service (including any path prefix); enables the Signage (Sissi) target | `""` | `"https://host/signage"` |
 
 See `.env.example` for reference.
 
@@ -142,3 +143,10 @@ This project is an integral component of the [Pi Production Ecosystem](file:///d
 ## Go live (play options)
 
 After the slides are pushed, the **Play** tab asks for the feed (Pi Program 1 to 3), the Pi output (Pi 1 or Pi 2), the projector (left = 1, right = 2, or none) and whether to start from black. **Go live** saves an action list through `POST /api/v1/canva/action-lists` (playlist, feed to Pi output, Pi output to projector, cue first slide, fade to black on or off) and opens the returned link in picontrol, which runs the list on the church network. The plugin never runs the list itself. Canva's `requestOpenExternalUrl` may need the picontrol domain listed as an allowed external URL in the Canva developer portal. Not tried in Canva.
+
+## Signage (Sissi)
+
+The Content Publisher includes a **Signage (Sissi)** (`signage`) publish target alongside the Pi targets. It sends exported image slides and video directly to the Sissi signage service on the VPS (with screen selection, append/replace mode, and per-image duration in seconds) without involving the church Pi.
+
+* **Configuration**: Set `VITE_SIGNAGE_URL` at build time (HTTPS URL including any path prefix, e.g. `https://host/signage`), or enter the signage URL in the app's **Settings** (saved in browser `localStorage`). The target is enabled only when a signage URL is configured.
+* **Status**: **Not yet tested against the real signage service** (pending first deployment of Sissi and spike S1 in Canva). Only unit tests with mock responses and local dev simulation have been run.

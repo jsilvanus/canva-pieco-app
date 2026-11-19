@@ -8,11 +8,13 @@ export function SettingsForm({ onClose, onSaved }: { onClose: () => void; onSave
   const intl = useIntl();
   const [gatewayUrl, setGatewayUrl] = useState(CONFIG.gatewayUrl);
   const [gatewayApiKey, setGatewayApiKey] = useState(CONFIG.gatewayApiKey);
+  const [signageUrl, setSignageUrl] = useState(CONFIG.signageUrl);
+  const [signagePushKey, setSignagePushKey] = useState(CONFIG.signagePushKey);
   const [error, setError] = useState("");
 
   const save = () => {
     try {
-      saveRuntimeSettings({ gatewayUrl, gatewayApiKey });
+      saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey });
       setError("");
       onSaved();
     } catch (err) {
@@ -37,6 +39,26 @@ export function SettingsForm({ onClose, onSaved }: { onClose: () => void; onSave
         })}
         value={gatewayApiKey}
         control={(props) => <TextInput {...props} onChange={setGatewayApiKey} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Signage (Sissi) address (https)", description: "Label of the signage service URL field" })}
+        labelMarker="optional"
+        description={intl.formatMessage({
+          defaultMessage: "Include the path if there is one, for example https://host/signage. Leave empty to turn signage off.",
+          description: "Help text under the signage address field",
+        })}
+        value={signageUrl}
+        control={(props) => <TextInput {...props} type="url" onChange={setSignageUrl} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Signage key", description: "Label of the signage push key field" })}
+        labelMarker="optional"
+        description={intl.formatMessage({
+          defaultMessage: "Only needed outside Canva. Leave empty when signage accepts your Canva sign-in.",
+          description: "Help text under the signage key field",
+        })}
+        value={signagePushKey}
+        control={(props) => <TextInput {...props} onChange={setSignagePushKey} />}
       />
       <Columns spacing="1u">
         <Column>

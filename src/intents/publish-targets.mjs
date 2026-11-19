@@ -46,10 +46,42 @@ export const TARGETS = [
     height: 1080,
     enabled: false,
   },
+  {
+    id: "signage",
+    kind: "signage",
+    label: "Signage (Sissi)",
+    displayName: "Signage (Sissi)",
+    // Size and orientation come from the chosen screen; these are the fallbacks.
+    dynamicSize: true,
+    orientation: "landscape",
+    width: 1920,
+    height: 1080,
+    // Enabled only when a signageUrl option is given (see withOptions).
+    enabled: false,
+    accepts: { image: { format: "png" }, video: { format: "mp4" } },
+  },
 ];
 
-export function targetById(id) {
-  return TARGETS.find((t) => t.id === id) ?? null;
+/** Fallback export size when a screen has no size hint. */
+export function signageFallbackSize(orientation) {
+  return orientation === "portrait" || orientation === "vertical"
+    ? { width: 1080, height: 1920 }
+    : { width: 1920, height: 1080 };
+}
+
+function withOptions(target, options) {
+  if (target?.kind !== "signage") return target;
+  return { ...target, enabled: Boolean(String(options?.signageUrl ?? "").trim()) };
+}
+
+/** The targets with options applied: signage is enabled only when `options.signageUrl` is set. */
+export function getTargets(options) {
+  return TARGETS.map((t) => withOptions(t, options));
+}
+
+export function targetById(id, options) {
+  const t = TARGETS.find((x) => x.id === id) ?? null;
+  return t ? withOptions(t, options) : null;
 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -58,13 +90,21 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
  * Checks the publish settings (stored as the publishRef JSON).
  * Returns { validityState, errors }. validityState is "valid" or "invalid_missing_required_fields".
  */
-export function validatePublishSettings(settings) {
+export function validatePublishSettings(settings, options) {
   const errors = [];
-  const target = targetById(settings?.targetId);
+  const target = targetById(settings?.targetId, options);
   if (!target) errors.push("target");
   else if (!target.enabled) errors.push("target_disabled");
 
   if (!String(settings?.name ?? "").trim()) errors.push("name");
+
+  if (target?.kind === "signage") {
+    errors.push(...validateSignageSettings(settings));
+    return {
+      validityState: errors.length === 0 ? "valid" : "invalid_missing_required_fields",
+      errors,
+    };
+  }
 
   const from = settings?.usage?.from ?? "";
   const toRaw = settings?.usage?.to ?? "";
@@ -111,5 +151,86 @@ export function buildPushPayload(settings, pages) {
     ...(target ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
     ...(from ? { useAt: from === to ? from : `${from}/${to}` } : {}),
     pages,
+  };
+}
+
+// ---- Signage (Sissi) ----
+
+const validSeconds = (v) => Number.isInteger(v) && v >= 1 && v <= 3600;
+
+function validateSignageSettings(settings) {
+  const errors = [];
+  if (String(settings?.name ?? "").trim().length > 200) errors.push("name");
+  const s = settings?.signage ?? {};
+  if (!String(s.screenId ?? "").trim()) errors.push("screenId");
+  if (s.mode !== "append" && s.mode !== "replace") errors.push("mode");
+  if (s.mode === "replace" && s.confirmReplace !== true) errors.push("confirmReplace");
+  const values = [];
+  if (s.secondsAll !== undefined && s.secondsAll !== null) values.push(s.secondsAll);
+  if (s.secondsByPage && typeof s.secondsByPage === "object") values.push(...Object.values(s.secondsByPage));
+  if (!values.every(validSeconds)) errors.push("seconds");
+  return errors;
+}
+
+const KIND_BY_EXT = { mp4: "video", png: "image", jpg: "image", jpeg: "image", webp: "image" };
+
+/** "image" / "video" when certain (Canva says so, or the URL path extension), else undefined. */
+export function signageKindFor(file) {
+  if (file?.kind === "image" || file?.kind === "video") return file.kind;
+  try {
+    const m = /\.([a-z0-9]+)$/i.exec(new URL(file.url).pathname);
+    return m ? KIND_BY_EXT[m[1].toLowerCase()] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Body for POST /push. `settings` is { name, signage: { screenId, mode, secondsAll, secondsByPage } };
+ * `files` are { url, pageNumber?, kind? } in order. Seconds are never sent for video; `kind` only when certain.
+ */
+export function buildSignagePushPayload(settings, files) {
+  const s = settings.signage ?? {};
+  return {
+    screenId: s.screenId,
+    mode: s.mode ?? "append",
+    title: String(settings.name ?? "").trim(),
+    pages: files.map((f, i) => {
+      const pageNumber = f.pageNumber ?? i + 1;
+      const kind = signageKindFor(f);
+      const seconds = s.secondsByPage?.[pageNumber] ?? s.secondsAll;
+      return {
+        pageNumber,
+        ...(kind ? { kind } : {}),
+        url: f.url,
+        ...(kind !== "video" && seconds !== undefined && seconds !== null ? { seconds } : {}),
+      };
+    }),
+  };
+}
+
+/** Serialises the signage settings for publishRef. */
+export function encodeSignageSettings(sig) {
+  const out = { screenId: sig?.screenId ?? "", mode: sig?.mode ?? "append" };
+  if (sig?.secondsAll !== undefined) out.secondsAll = sig.secondsAll;
+  if (sig?.secondsByPage) out.secondsByPage = sig.secondsByPage;
+  if (sig?.confirmReplace) out.confirmReplace = true;
+  return JSON.stringify(out);
+}
+
+export function parseSignageSettings(text) {
+  let o;
+  try {
+    o = typeof text === "string" ? JSON.parse(text) : text;
+  } catch {
+    o = null;
+  }
+  if (!o || typeof o !== "object") o = {};
+  return {
+    screenId: typeof o.screenId === "string" ? o.screenId : "",
+    mode: o.mode === "replace" ? "replace" : "append",
+    ...(o.secondsAll !== undefined ? { secondsAll: o.secondsAll } : {}),
+    secondsByPage: o.secondsByPage && typeof o.secondsByPage === "object" ? o.secondsByPage : {},
+    confirmReplace: o.confirmReplace === true,
   };
 }

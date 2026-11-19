@@ -55,3 +55,80 @@ test("push payload: single date becomes useAt, range becomes start/end, target i
   const range = { ...good, usage: { from: "2026-11-15", to: "2026-11-17" } };
   assert.equal(buildPushPayload(range, pages).useAt, "2026-11-15/2026-11-17");
 });
+
+// ---- signage ----
+import {
+  getTargets,
+  signageFallbackSize,
+  buildSignagePushPayload,
+  encodeSignageSettings,
+  parseSignageSettings,
+} from "../src/intents/publish-targets.mjs";
+
+const sig = { targetId: "signage", name: "Viikko 47", signage: { screenId: "s1", mode: "append" } };
+const url = { signageUrl: "https://h/signage" };
+
+test("signage: disabled without signageUrl, enabled with it; other targets unchanged", () => {
+  assert.equal(targetById("signage").enabled, false);
+  assert.equal(targetById("signage", url).enabled, true);
+  assert.equal(targetById("signage", url).dynamicSize, true);
+  assert.ok(validatePublishSettings(sig).errors.includes("target_disabled"));
+  assert.equal(getTargets(url).find((t) => t.id === "signage").enabled, true);
+  assert.equal(getTargets().filter((t) => t.enabled).length, 3);
+  assert.equal(targetById("piprogram-atem").transparent, true);
+  assert.equal(targetById("signage").transparent, undefined);
+  assert.deepEqual(signageFallbackSize("landscape"), { width: 1920, height: 1080 });
+  assert.deepEqual(signageFallbackSize("portrait"), { width: 1080, height: 1920 });
+});
+
+test("signage: validation needs no dates or permanent", () => {
+  assert.deepEqual(validatePublishSettings(sig, url), { validityState: "valid", errors: [] });
+});
+
+test("signage: validation rules", () => {
+  const v = (patch, name = "Viikko 47") =>
+    validatePublishSettings({ ...sig, name, signage: { ...sig.signage, ...patch } }, url).errors;
+  assert.deepEqual(v({ screenId: "" }), ["screenId"]);
+  assert.deepEqual(v({ mode: "x" }), ["mode"]);
+  assert.deepEqual(v({ mode: "replace" }), ["confirmReplace"]);
+  assert.deepEqual(v({ mode: "replace", confirmReplace: true }), []);
+  assert.deepEqual(v({ secondsAll: 0 }), ["seconds"]);
+  assert.deepEqual(v({ secondsAll: 3601 }), ["seconds"]);
+  assert.deepEqual(v({ secondsAll: 1.5 }), ["seconds"]);
+  assert.deepEqual(v({ secondsByPage: { 1: 5, 2: 3600 } }), []);
+  assert.deepEqual(v({ secondsByPage: { 1: 5, 2: "7" } }), ["seconds"]);
+  assert.deepEqual(v({}, ""), ["name"]);
+  assert.deepEqual(v({}, "x".repeat(201)), ["name"]);
+  assert.deepEqual(v({}, "x".repeat(200)), []);
+});
+
+test("signage: push payload seconds and kind rules", () => {
+  const s = { ...sig, signage: { screenId: "s1", mode: "replace", secondsAll: 10, secondsByPage: { 2: 20 } } };
+  const p = buildSignagePushPayload(s, [
+    { url: "https://c/a.png?x=1" },
+    { url: "https://c/b.jpeg" },
+    { url: "https://c/v.mp4", pageNumber: 3 },
+    { url: "https://c/blob", kind: "video" },
+    { url: "https://c/unknown" },
+  ]);
+  assert.deepEqual(p, {
+    screenId: "s1",
+    mode: "replace",
+    title: "Viikko 47",
+    pages: [
+      { pageNumber: 1, kind: "image", url: "https://c/a.png?x=1", seconds: 10 },
+      { pageNumber: 2, kind: "image", url: "https://c/b.jpeg", seconds: 20 },
+      { pageNumber: 3, kind: "video", url: "https://c/v.mp4" },
+      { pageNumber: 4, kind: "video", url: "https://c/blob" },
+      { pageNumber: 5, url: "https://c/unknown", seconds: 10 },
+    ],
+  });
+  const none = buildSignagePushPayload(sig, [{ url: "https://c/a.png" }]);
+  assert.equal("seconds" in none.pages[0], false);
+});
+
+test("signage: settings round trip", () => {
+  const s = { screenId: "s1", mode: "replace", secondsAll: 8, secondsByPage: { 1: 5 }, confirmReplace: true };
+  assert.deepEqual(parseSignageSettings(encodeSignageSettings(s)), s);
+  assert.deepEqual(parseSignageSettings("nope"), { screenId: "", mode: "append", secondsByPage: {}, confirmReplace: false });
+});

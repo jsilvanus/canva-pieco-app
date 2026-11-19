@@ -1,12 +1,26 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import { Alert, Badge, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import type { DateObj } from "@canva/app-ui-kit";
 import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
-import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
-import type { PublishSettingsData } from "../publish-targets.mjs";
-import { TargetSummary } from "./target_summary";
+import { CONFIG } from "../../config.mjs";
 import { SettingsForm } from "../../app/settings_form";
+import { listScreens } from "../../services/signage-api.mjs";
+import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
+import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
+import { SignageFields } from "./signage_fields";
+import {
+  findScreenById,
+  isScreenNotFoundPayload,
+  isSignageTarget,
+  mergeSignageSettings,
+  screenListFailed,
+  screenListInitialState,
+  screenListLoaded,
+  subscribeDraftSecondsByPage,
+} from "./signage-publisher.mjs";
+import type { ScreenListState } from "./signage-publisher.mjs";
+import { TargetSummary } from "./target_summary";
 
 const toIso = (d?: DateObj) => (d ? `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}` : "");
 const fromIso = (s?: string): DateObj | undefined => {
@@ -15,8 +29,8 @@ const fromIso = (s?: string): DateObj | undefined => {
 };
 
 /**
- * Publish settings: a name and the date (or date range) the slides are used. The target itself
- * (PiProgram ATEM or vertical projector, PiGraphics) is Canva's output type choice above this form.
+ * Publish settings: a name and either signage options (screen, mode, seconds) or the date /
+ * permanent-asset fields for the Pi targets.
  */
 export function SettingsUi({ invocationContext, updatePublishSettings, registerOnContextChange }: RenderSettingsUiRequest) {
   const intl = useIntl();
@@ -26,30 +40,66 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   }));
   const [publishError, setPublishError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [screenList, setScreenList] = useState<ScreenListState>(screenListInitialState);
+
+  const signageUrl = CONFIG.signageUrl;
+  const target = targetById(settings.targetId, { signageUrl });
+  const isSignage = isSignageTarget(target);
+
+  const loadScreens = useCallback(async () => {
+    setScreenList(screenListInitialState());
+    try {
+      const screens = await listScreens();
+      setScreenList(screenListLoaded(screens));
+    } catch (err) {
+      setScreenList(screenListFailed(err));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isSignage) void loadScreens();
+  }, [isSignage, loadScreens]);
 
   useEffect(
     () =>
       registerOnContextChange({
         onContextChange: (context: SettingsUiContext) => {
-          if (context.reason === "publish_settings") setSettings((prev) => ({ ...prev, targetId: context.outputType.id }));
-          else if (context.reason === "publish_error") setPublishError(context.error.appDefinedPayload ?? "");
-          else setPublishError(null);
+          if (context.reason === "publish_settings") {
+            setSettings((prev) => ({ ...prev, targetId: context.outputType.id }));
+          } else if (context.reason === "publish_error") {
+            const payload = context.error.appDefinedPayload ?? "";
+            setPublishError(payload);
+            if (isSignage && isScreenNotFoundPayload(payload)) void loadScreens();
+          } else {
+            setPublishError(null);
+          }
         },
       }),
-    [registerOnContextChange],
+    [registerOnContextChange, isSignage, loadScreens],
   );
 
-  const { validityState, errors } = validatePublishSettings(settings);
+  useEffect(() => {
+    if (!isSignage) return;
+    return subscribeDraftSecondsByPage((secondsByPage) => {
+      setSettings((prev) => mergeSignageSettings(prev, { secondsByPage }));
+    });
+  }, [isSignage]);
+
+  const { validityState, errors } = validatePublishSettings(settings, { signageUrl });
   useEffect(() => {
     updatePublishSettings({ publishRef: encodePublishRef(settings), validityState });
   }, [settings, validityState, updatePublishSettings]);
 
-  const target = targetById(settings.targetId);
   const update = (patch: PublishSettingsData) => {
     setTouched(true);
     setSettings((prev) => ({ ...prev, ...patch }));
   };
+  const updateSignage = (patch: Partial<SignageSettings>) => {
+    setTouched(true);
+    setSettings((prev) => mergeSignageSettings(prev, patch));
+  };
   const showErrors = touched || publishError != null;
+  const selectedScreen = isSignage ? findScreenById(screenList.screens, settings.signage?.screenId) : null;
 
   return (
     <Rows spacing="2u">
@@ -58,12 +108,19 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           <Title size="small">{intl.formatMessage({ defaultMessage: "Keskuskirkko", description: "Heading of the publish settings" })}</Title>
         </Column>
         <Column width="content">
-          <Badge tone="info" text={intl.formatMessage({ defaultMessage: "Pi gateway", description: "Badge naming where the slides go" })} />
+          <Badge
+            tone="info"
+            text={
+              isSignage
+                ? intl.formatMessage({ defaultMessage: "Signage (Sissi)", description: "Badge naming the signage service" })
+                : intl.formatMessage({ defaultMessage: "Pi gateway", description: "Badge naming where the slides go" })
+            }
+          />
         </Column>
       </Columns>
 
       {target ? (
-        <TargetSummary target={target} />
+        <TargetSummary target={target} screen={selectedScreen} />
       ) : (
         <Text tone="secondary">
           {intl.formatMessage({ defaultMessage: "Choose where the slides go.", description: "Shown before a publish target is chosen" })}
@@ -85,44 +142,73 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
 
       <FormField
         label={intl.formatMessage({ defaultMessage: "Name", description: "Label of the presentation name field" })}
-        description={intl.formatMessage({ defaultMessage: "Shown in Pi Program, for example “Sunday service 15.11.”", description: "Help text under the name field" })}
+        description={
+          isSignage
+            ? intl.formatMessage({
+                defaultMessage: "Title shown in Sissi (1–200 characters), for example “Sunday service 15.11.”",
+                description: "Help text under the name field when signage is selected",
+              })
+            : intl.formatMessage({
+                defaultMessage: "Shown in Pi Program, for example “Sunday service 15.11.”",
+                description: "Help text under the name field",
+              })
+        }
         value={settings.name ?? ""}
         error={showErrors && errors.includes("name")}
         control={(props) => <TextInput {...props} onChange={(name) => update({ name })} />}
       />
 
-      <Columns spacing="1u">
-        <Column>
-          <FormField
-            label={intl.formatMessage({ defaultMessage: "Used on", description: "Label of the first (or only) date the slides are used" })}
-            labelMarker="optional"
-            value={fromIso(settings.usage?.from)}
-            error={showErrors && errors.includes("date")}
-            control={(props) => <DateInput {...props} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, from: toIso(d) } })} />}
-          />
-        </Column>
-        <Column>
-          <FormField
-            label={intl.formatMessage({ defaultMessage: "Until", description: "Label of the optional last date of a date range" })}
-            labelMarker="optional"
-            value={fromIso(settings.usage?.to)}
-            error={showErrors && errors.includes("date") && Boolean(settings.usage?.to)}
-            control={(props) => (
-              <DateInput {...props} min={fromIso(settings.usage?.from)} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, to: toIso(d) || undefined } })} />
-            )}
-          />
-        </Column>
-      </Columns>
+      {isSignage ? (
+        <SignageFields
+          signage={settings.signage ?? {}}
+          screenList={screenList}
+          errors={errors}
+          showErrors={showErrors}
+          onRetryScreens={() => void loadScreens()}
+          onChange={updateSignage}
+        />
+      ) : (
+        <Columns spacing="1u">
+          <Column>
+            <FormField
+              label={intl.formatMessage({ defaultMessage: "Used on", description: "Label of the first (or only) date the slides are used" })}
+              labelMarker="optional"
+              value={fromIso(settings.usage?.from)}
+              error={showErrors && errors.includes("date")}
+              control={(props) => <DateInput {...props} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, from: toIso(d) } })} />}
+            />
+          </Column>
+          <Column>
+            <FormField
+              label={intl.formatMessage({ defaultMessage: "Until", description: "Label of the optional last date of a date range" })}
+              labelMarker="optional"
+              value={fromIso(settings.usage?.to)}
+              error={showErrors && errors.includes("date") && Boolean(settings.usage?.to)}
+              control={(props) => (
+                <DateInput {...props} min={fromIso(settings.usage?.from)} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, to: toIso(d) || undefined } })} />
+              )}
+            />
+          </Column>
+        </Columns>
+      )}
 
       <Rows spacing="1u">
         <Title size="xsmall">{intl.formatMessage({ defaultMessage: "Church gateway", description: "Heading of the gateway address and key block in the publish settings" })}</Title>
         <Text size="small" tone="secondary">
-          {intl.formatMessage({ defaultMessage: "Where the slides are sent. Saved in this browser; the same settings as in the app's Settings.", description: "Explains the gateway block" })}
+          {isSignage
+            ? intl.formatMessage({
+                defaultMessage: "Set the Signage (Sissi) address here. Saved in this browser; the same settings as in the app's Settings.",
+                description: "Explains the gateway/signage URL block when signage is selected",
+              })
+            : intl.formatMessage({
+                defaultMessage: "Where the slides are sent. Saved in this browser; the same settings as in the app's Settings.",
+                description: "Explains the gateway block",
+              })}
         </Text>
         <SettingsForm onClose={() => {}} onSaved={() => setTouched(true)} />
       </Rows>
 
-      {!settings.usage?.from && !settings.usage?.to && (
+      {!isSignage && !settings.usage?.from && !settings.usage?.to && (
         <Checkbox
           label={intl.formatMessage({ defaultMessage: "No date: this is a permanent asset that stays in church storage until it is deleted", description: "Confirmation shown when no use date is given" })}
           checked={settings.permanent === true}

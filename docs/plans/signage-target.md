@@ -114,10 +114,10 @@ Creating or deleting screens, reordering or removing entries (the admin page doe
 
 ### Build tasks (Sonnet-class agents, one branch `signage-target`, tests with `node --test`, no real network)
 
-1. **T1 Client:** `src/services/signage-api.mjs` + `.d.mts`: `listScreens`, `pushSignage`, `getSignagePush`, `waitForSignagePush` (1 s poll, 10 min timeout, tolerate 3 failed polls), error mapping per section 4 and the new codes, Bearer from the Canva token, dev mock. Tests with a fake fetch driven by the OpenAPI examples. Owns `src/services/signage-api.*`, `test/signage-api.test.mjs`.
-2. **T2 Target and payload:** `signage` entry in `publish-targets.mjs` (`dynamicSize`, accepts image png + video mp4, enabled only with `signageUrl`), `validatePublishSettings` branch, `buildSignagePushPayload` (seconds only for images, `kind` only when certain). Owns `src/intents/publish-targets.*`, `test/publish-targets.test.mjs` additions. Runs in parallel with T1.
-3. **T3 Config:** `signageUrl` in `src/config.mjs` (+ `.d.mts`), Settings field, localStorage, https-only normalisation, `.env.example`. After T1/T2.
-4. **T4 UI:** `signage_fields.tsx`, `settings_ui.tsx`, `preview_ui.tsx`, `index.tsx` (`outputTypeFor`, `publishContent` flow of section 2), i18n strings. After T1-T3.
-5. **T5 Bundle and docs:** rebuild `dist-js` through the usual script (the file is committed in this repo), README "Signage (Sissi)" section stating it was never tested against the real service, tick the plan. After T4.
+1. [x] **T1 Client:** `src/services/signage-api.mjs` + `.d.mts`: `listScreens`, `pushSignage`, `getSignagePush`, `waitForSignagePush` (1 s poll, 10 min timeout, tolerate 3 failed polls), error mapping per section 4 and the new codes, Bearer from the Canva token, dev mock. Tests with a fake fetch driven by the OpenAPI examples. Owns `src/services/signage-api.*`, `test/signage-api.test.mjs`.
+2. [x] **T2 Target and payload:** `signage` entry in `publish-targets.mjs` (`dynamicSize`, accepts image png + video mp4, enabled only with `signageUrl`), `validatePublishSettings` branch, `buildSignagePushPayload` (seconds only for images, `kind` only when certain). Owns `src/intents/publish-targets.*`, `test/publish-targets.test.mjs` additions. Runs in parallel with T1.
+3. [x] **T3 Config:** `signageUrl` in `src/config.mjs` (+ `.d.mts`), Settings field, localStorage, https-only normalisation, `.env.example`. After T1/T2.
+4. [x] **T4 UI:** `signage_fields.tsx`, `settings_ui.tsx`, `preview_ui.tsx`, `index.tsx` (`outputTypeFor`, `publishContent` flow of section 2), i18n strings. After T1-T3.
+5. [x] **T5 Bundle and docs:** rebuild `dist-js` through the usual script (the file is committed in this repo), README "Signage (Sissi)" section stating it was never tested against the real service, tick the plan. After T4.
 
 After T1+T2 and again after T4 a reviewer agent checks the diff against this plan and the OpenAPI file.

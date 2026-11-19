@@ -1,6 +1,6 @@
 // Content Publisher intent: "Publish to Keskuskirkko" in Canva's Share menu. Canva shows our targets
-// as output types, our settings form (name and date) and our preview, exports the design, and hands
-// us the files; we send them to the Pi gateway.
+// as output types, our settings form and our preview, exports the design, and hands us the files;
+// we send them to the Pi gateway or to Signage (Sissi).
 import type {
   ContentPublisherIntent,
   GetPublishConfigurationResponse,
@@ -10,15 +10,28 @@ import type {
   RenderPreviewUiRequest,
   RenderSettingsUiRequest,
 } from "@canva/intents/content";
+import { CONFIG } from "../../config.mjs";
 import { pushContent } from "../../services/gateway-api.mjs";
 import { renderInCanva } from "../../app/mount";
-import { TARGETS, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
+import { getTargets, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
 import type { Target } from "../publish-targets.mjs";
+import { isSignageTarget, publishSignageContent } from "./signage-publisher.mjs";
 import { SettingsUi } from "./settings_ui";
 import { PreviewUi } from "./preview_ui";
 
 // One Canva output type per target; Canva lists them as the choices in its publish dialog.
 function outputTypeFor(target: Target): OutputTypeConfiguration {
+  const accepts = target.accepts
+    ? {
+        ...(target.accepts.image ? { image: { format: "png" as const } } : {}),
+        ...(target.accepts.video ? { video: { format: "mp4" as const } } : {}),
+      }
+    : {
+        // Any design size is accepted: a size or ratio that does not match the target only gets a warning
+        // in the preview, so it never blocks publishing.
+        image: target.transparent ? { format: "png" as const, allowTransparentBackground: true } : { format: "png" as const },
+      };
+
   return {
     id: target.id,
     displayName: target.displayName,
@@ -28,18 +41,15 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
         id: "slides",
         displayName: "Slides",
         fileCount: { min: 1 },
-        accepts: {
-          // Any design size is accepted: a size or ratio that does not match the target only gets a warning
-          // in the preview, so it never blocks publishing.
-          image: target.transparent ? { format: "png", allowTransparentBackground: true } : { format: "png" },
-        },
+        accepts,
       },
     ],
   };
 }
 
 async function getPublishConfiguration(): Promise<GetPublishConfigurationResponse> {
-  return { status: "completed", outputTypes: TARGETS.map(outputTypeFor) };
+  const targets = getTargets({ signageUrl: CONFIG.signageUrl }).filter((t) => t.kind !== "signage" || t.enabled);
+  return { status: "completed", outputTypes: targets.map(outputTypeFor) };
 }
 
 function renderSettingsUi(request: RenderSettingsUiRequest) {
@@ -51,12 +61,17 @@ function renderPreviewUi(request: RenderPreviewUiRequest) {
 }
 
 async function publishContent({ outputMedia, outputType, publishRef }: PublishContentRequest): Promise<PublishContentResponse> {
+  const target = targetById(outputType.id, { signageUrl: CONFIG.signageUrl });
+  if (isSignageTarget(target)) {
+    return publishSignageContent({ outputMedia, outputType, publishRef });
+  }
+
   const settings = { ...decodePublishRef(publishRef), targetId: outputType.id };
   const check = validatePublishSettings(settings);
   if (check.validityState !== "valid") {
     return { status: "app_error", message: `Publish settings are incomplete: ${check.errors.join(", ")}.`, appDefinedPayload: check.errors.join(",") };
   }
-  if (targetById(outputType.id)?.enabled !== true) {
+  if (target?.enabled !== true) {
     return { status: "app_error", message: "This target is not available yet." };
   }
 
