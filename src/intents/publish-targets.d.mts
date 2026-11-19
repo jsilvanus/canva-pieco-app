@@ -12,6 +12,8 @@ export type PublishSettingsData = {
   targetId?: string;
   name?: string;
   usage?: { from?: string; to?: string };
+  /** Confirmed: no use date, the slides are a permanent asset. */
+  permanent?: boolean;
 };
 export const TARGETS: Target[];
 export function targetById(id: string | undefined): Target | null;
