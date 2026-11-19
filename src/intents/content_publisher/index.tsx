@@ -71,7 +71,8 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
     await pushContent(buildPushPayload(settings, pages));
     return { status: "completed" };
   } catch (error) {
-    return { status: "app_error", message: `Could not send to the church gateway: ${error instanceof Error ? error.message : String(error)}` };
+    const detail = error instanceof Error ? error.message : String(error);
+    return { status: "app_error", message: `Could not send to the church gateway: ${detail}`, appDefinedPayload: detail.slice(0, 300) };
   }
 }
 
