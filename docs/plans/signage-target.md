@@ -59,7 +59,7 @@ The upload bundle stays one classic script without `import.meta`; the new module
 ## 4. Auth and errors
 
 - `Authorization: Bearer <auth.getCanvaUserToken()>` on every call, exactly as `gateway-api.mjs` does now (`canvaUserToken()`). No key in the bundle. Outside Canva (browser test) the optional push key from Settings is used, mirroring the gateway client.
-- Error mapping to user text: 401 `UNAUTHORIZED` "Sign in to Canva again"; 403 `TEAM_NOT_ALLOWED` "Your Canva team is not allowed to publish to signage"; 503 `AUTH_NOT_CONFIGURED` "Signage is not set up yet"; 404 `SCREEN_NOT_FOUND` refreshes the screen list; 422 codes show the service's message; 429 `BUSY` "Signage is busy, try again in a moment". 24 h push records mean a reload mid-publish can still poll the same `pushId`.
+- Error mapping to user text: 401 `UNAUTHORIZED` "Sign in to Canva again"; 403 `TEAM_NOT_ALLOWED` "Your Canva team is not allowed to publish to signage"; 503 `AUTH_NOT_CONFIGURED` "Signage is not set up yet"; 404 `SCREEN_NOT_FOUND` refreshes the screen list; 422 codes show the service's message; post-202 failure codes are listed in section 6; 429 `BUSY` "Signage is busy, try again in a moment". 24 h push records mean a reload mid-publish can still poll the same `pushId`.
 - CORS: the Canva app origin must be in the signage service's `SIGNAGE_CORS_ORIGINS` (and in pigateway's tunnel list for the Pi targets). Both are operator settings, not code here. Canva's developer portal may also need the signage host in the app's allowed domains (decision 1 of the signage plan: a path on the existing host avoids growing that list).
 
 ## 5. Open question answered: one MP4 per video page, or one for the whole design?
@@ -73,20 +73,22 @@ Consequences for the plan:
 
 1. **Declare both kinds in the signage slot**: `accepts: { image: { format: "png" }, video: { format: "mp4" } }`, no `fileCount` maximum (the service takes 1-100). Canva then decides per selected page what it hands over.
 2. **Do not assume one file per page.** `pageNumber` in the push is just the file's order. If Canva returns one MP4 for a multi-page design, it becomes one `video` entry; if it returns several, each is its own entry.
-3. **Tell image from video per file**, because `pages[].kind` is required by the contract and the file objects in `outputMedia` may not say. Preferred order: use the kind Canva provides if there is one (S1 checks the actual object); otherwise infer from the URL's path extension (`.mp4` vs `.png/.jpg/.webp`); otherwise ask the signage service to sniff (request R1 below).
+3. **`kind` is optional in the contract**: the service sniffs the downloaded bytes. The app sends `kind` only when it is sure (Canva says so, or the URL path ends in `.mp4` / `.png` / `.jpg` / `.webp`) and otherwise omits it. A wrong `kind` fails the push with `KIND_MISMATCH`, so when in doubt, omit it. The app still needs to know image vs video for the UI (seconds field vs read-only duration); that uses the same hints, and an unknown file is treated as an image until the push result says otherwise.
 4. **Video duration** shown read-only comes from the preview selection's `durationMs` when available; otherwise the field says "length is read when it is added" (the service reads it from the MP4 header anyway).
 
 ### Spike S1 (first task of the build, ~30 minutes, needs Juha's Canva account)
 
 Publish a 3-page design (two stills, one page with a video) once through a throwaway Content Publisher output type with a slot accepting `image` and `video`, and log the shape of `outputMedia` (files, count, extensions, kind fields, durations). Record the result in this document. Then repeat with a design where two pages have video. If Canva always hands one MP4 for the whole design, the plan above still works (one video entry), and the UI note tells users that videos in a multi-page design play as one clip.
 
-## 6. Requests to the signage contract (simple-smart-signage)
+## 6. Contract points settled with the signage plan
 
-These are small and optional; the app works without them, but they remove guesswork:
+Requests R1-R3 from the first draft are settled (simple-smart-signage PR #4, sections 3 and 4.3):
 
-- **R1.** Allow `kind` to be omitted on a page. The service already checks the downloaded bytes and rejects a mismatch, so it can decide. Keeps the app from guessing from URLs.
-- **R2.** In `GET /screens`, include `defaultImageSeconds` (already there) and a per-screen `maxVideoSeconds` if there is a limit, so the preview can warn before a long video is exported.
-- **R3.** Confirm that `replace` leaves the screen untouched on failure (the plan says so) and that a second push to the same screen while one runs is allowed or returns 429 `BUSY`; the UI wording depends on it.
+- **R1.** `kind` is optional; the service sniffs the type. A wrong `kind` fails with `KIND_MISMATCH`.
+- **R2.** `GET /screens` returns an optional `maxVideoSeconds` per screen (`null` = no limit). A longer video fails with `VIDEO_TOO_LONG`. The preview warns when a video's `durationMs` exceeds it, and the settings form shows the limit under the screen picker.
+- **R3.** A failed push leaves the screen untouched. A concurrent push to the same screen is accepted (202) and pushes apply in order, so the app does not block a second publish. `429 BUSY` only appears when more than 3 pushes run service-wide ("try again in a moment").
+- One MP4 for a whole video design is accepted as a single video entry (section 5).
+- Failures after the 202 come back in the poll as `DOWNLOAD_FAILED`, `TOO_LARGE`, `UNSUPPORTED_TYPE`, `KIND_MISMATCH` or `VIDEO_TOO_LONG`. The app maps each to a readable message (for example "A file is too large for the screen" or "The video is longer than this screen allows") and shows the service's message as detail.
 
 ## 7. Build order (after Juha's go)
 
