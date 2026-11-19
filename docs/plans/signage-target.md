@@ -22,7 +22,7 @@ Fields shown **only when signage is selected**:
 
 Hidden for signage: the "Used on / Until" dates and the "permanent asset" checkbox (they belong to the Pi targets' `useAt` handling). The "Church gateway" block stays, but signage gets its own base URL field (section 3).
 
-Export size and orientation follow the chosen screen: the preview compares the design with the screen's `width`/`height`/`orientation` (a warning only, as for other targets). If a screen has no size hint, 1920x1080 (landscape) or 1080x1920 (portrait) is assumed.
+Export size and orientation follow the chosen screen: the preview compares the design with the screen's `width`/`height`/`orientation` (a warning only, as for other targets). If a screen has no size hint, 1920x1080 (landscape) or 1080x1920 (vertical) is assumed.
 
 ## 2. Settings UI and publish flow
 

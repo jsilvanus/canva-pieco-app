@@ -31,7 +31,7 @@ const LOBBY = {
 const HALL_PORTRAIT_NO_SIZE = {
   id: "hall",
   name: "Hall",
-  orientation: "portrait",
+  orientation: "vertical",
   width: null,
   height: null,
   defaultImageSeconds: 8,
@@ -42,8 +42,8 @@ const HALL_PORTRAIT_NO_SIZE = {
 
 test("screenTargetDimensions uses screen size or orientation fallback", () => {
   assert.deepEqual(screenTargetDimensions(LOBBY), { orientation: "landscape", width: 1920, height: 1080 });
-  assert.deepEqual(screenTargetDimensions(HALL_PORTRAIT_NO_SIZE), { orientation: "portrait", width: 1080, height: 1920 });
-  assert.equal(formatScreenOptionLabel(HALL_PORTRAIT_NO_SIZE), "Hall (portrait, 1080 × 1920)");
+  assert.deepEqual(screenTargetDimensions(HALL_PORTRAIT_NO_SIZE), { orientation: "vertical", width: 1080, height: 1920 });
+  assert.equal(formatScreenOptionLabel(HALL_PORTRAIT_NO_SIZE), "Hall (vertical, 1080 × 1920)");
   assert.equal(findScreenById([LOBBY, HALL_PORTRAIT_NO_SIZE], "hall")?.name, "Hall");
 });
 

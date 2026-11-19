@@ -10,7 +10,7 @@ export function TargetSummary({ target, screen }: { target: Target; screen?: Sig
   const dims = target.dynamicSize && screen ? screenTargetDimensions(screen) : null;
   const orientationKey = dims ? dims.orientation : target.orientation;
   const orientation =
-    orientationKey === "vertical" || orientationKey === "portrait"
+    orientationKey === "vertical"
       ? intl.formatMessage({ defaultMessage: "Vertical", description: "Portrait orientation of a publish target" })
       : intl.formatMessage({ defaultMessage: "Landscape", description: "Landscape orientation of a publish target" });
 

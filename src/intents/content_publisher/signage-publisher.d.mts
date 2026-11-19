@@ -23,7 +23,7 @@ export type SignageWarnings = {
 
 export function isSignageTarget(target: Target | null | undefined): boolean;
 export function screenTargetDimensions(screen: SignageScreen | null | undefined): {
-  orientation: "landscape" | "portrait";
+  orientation: "landscape" | "vertical";
   width: number;
   height: number;
 };

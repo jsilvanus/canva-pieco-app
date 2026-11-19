@@ -23,7 +23,8 @@ export function isSignageTarget(target) {
 }
 
 export function screenTargetDimensions(screen) {
-  const orientation = screen?.orientation === "portrait" ? "portrait" : "landscape";
+  const orientation =
+    screen?.orientation === "vertical" || screen?.orientation === "portrait" ? "vertical" : "landscape";
   const fallback = signageFallbackSize(orientation);
   return {
     orientation,

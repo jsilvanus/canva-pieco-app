@@ -2,7 +2,7 @@
 export type SignageScreen = {
   id: string;
   name: string;
-  orientation: "landscape" | "portrait";
+  orientation: "landscape" | "vertical";
   width?: number | null;
   height?: number | null;
   defaultImageSeconds: number;

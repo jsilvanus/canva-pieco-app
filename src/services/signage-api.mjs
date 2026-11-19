@@ -152,7 +152,7 @@ async function apiRequest(path, options = {}) {
 
 const MOCK_SCREENS = [
   { id: "lobby", name: "Lobby (simulated)", orientation: "landscape", width: 1920, height: 1080, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 3, playlistVersion: 1 },
-  { id: "hall", name: "Hall (simulated)", orientation: "portrait", width: 1080, height: 1920, defaultImageSeconds: 8, maxVideoSeconds: 60, entryCount: 0, playlistVersion: 1 },
+  { id: "hall", name: "Hall (simulated)", orientation: "vertical", width: 1080, height: 1920, defaultImageSeconds: 8, maxVideoSeconds: 60, entryCount: 0, playlistVersion: 1 },
 ];
 const MOCK_PUSH_MS = 3000;
 const mockPushes = new Map();

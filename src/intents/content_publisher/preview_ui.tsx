@@ -72,7 +72,7 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
 
   const columns =
     isSignage && selectedScreen
-      ? screenTargetDimensions(selectedScreen).orientation === "portrait"
+      ? screenTargetDimensions(selectedScreen).orientation === "vertical"
         ? 3
         : 2
       : target?.orientation === "vertical"
