@@ -53,12 +53,13 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
   const [step, setStep] = useState<Step>("push");
   const [serviceDate, setServiceDate] = useState("");
   const [staged, setStaged] = useState<Staged | null>(null);
+  const [askPermanent, setAskPermanent] = useState(false);
   const [setup, setSetup] = useState<Setup>(INITIAL_SETUP);
   const [settingUp, setSettingUp] = useState(false);
   const [live, setLive] = useState<Live | null>(null);
   const [golive, setGolive] = useState<GoLiveList | null>(null);
 
-  const handlePush = async () => {
+  const handlePush = async (permanentConfirmed = false) => {
     let useAt = null;
     try {
       useAt = parseUseAt(serviceDate);
@@ -66,6 +67,12 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       notify(errorMessage(err), "critical");
       return;
     }
+    // No service date: the content is kept for good, so ask once before sending it.
+    if (!useAt && !permanentConfirmed) {
+      setAskPermanent(true);
+      return;
+    }
+    setAskPermanent(false);
     const showTask = (task: Task) => {
       const { percent, label } = describeTask(task);
       showProgress(percent, label);
@@ -157,7 +164,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       </Tabs>
 
       {step === "push" && (
-        <PushStep serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} onPush={handlePush} onNext={() => setStep("setup")} />
+        <PushStep serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} askPermanent={askPermanent} onCancelPermanent={() => setAskPermanent(false)} onPush={() => handlePush(false)} onConfirmPermanent={() => handlePush(true)} onNext={() => setStep("setup")} />
       )}
       {step === "setup" && staged && <SetupStep staged={staged} setup={setup} onChange={setSetup} busy={settingUp} onApply={handleGoLive} />}
       {step === "live" && live && <LiveStep live={live} active={active} onChange={setLive} notify={notify} onReconfigure={() => setStep("setup")} golive={golive} />}
@@ -172,6 +179,9 @@ function PushStep({
   busy,
   onPush,
   onNext,
+  askPermanent,
+  onCancelPermanent,
+  onConfirmPermanent,
 }: {
   serviceDate: string;
   onServiceDateChange: (value: string) => void;
@@ -179,6 +189,9 @@ function PushStep({
   busy: boolean;
   onPush: () => void;
   onNext: () => void;
+  askPermanent: boolean;
+  onCancelPermanent: () => void;
+  onConfirmPermanent: () => void;
 }) {
   const intl = useIntl();
   const pushLabel = intl.formatMessage({ defaultMessage: "Push content to church", description: "Exports the design and uploads it to church storage" });
@@ -201,9 +214,26 @@ function PushStep({
         value={serviceDate}
         control={(props) => <TextInput {...props} onChange={onServiceDateChange} />}
       />
-      <Button variant="primary" onClick={onPush} loading={busy} disabled={busy} stretch>
-        {pushLabel}
-      </Button>
+      {askPermanent ? (
+        <Rows spacing="1u">
+          <Text>
+            {intl.formatMessage({
+              defaultMessage: "No service date was given. Is this a permanent asset that stays in church storage until it is deleted?",
+              description: "Confirmation shown when a push has no service date",
+            })}
+          </Text>
+          <Button variant="primary" onClick={onConfirmPermanent} loading={busy} disabled={busy} stretch>
+            {intl.formatMessage({ defaultMessage: "Yes, permanent asset", description: "Confirms a push without a service date" })}
+          </Button>
+          <Button variant="secondary" onClick={onCancelPermanent} disabled={busy} stretch>
+            {intl.formatMessage({ defaultMessage: "Cancel", description: "Cancels the permanent asset question" })}
+          </Button>
+        </Rows>
+      ) : (
+        <Button variant="primary" onClick={onPush} loading={busy} disabled={busy} stretch>
+          {pushLabel}
+        </Button>
+      )}
       {!isRunningInCanva() && (
         <Text size="small" tone="secondary">
           {intl.formatMessage({ defaultMessage: "Running outside Canva: the export is simulated.", description: "Shown when the app runs outside Canva" })}
