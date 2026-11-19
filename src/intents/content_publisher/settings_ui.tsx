@@ -6,6 +6,7 @@ import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData } from "../publish-targets.mjs";
 import { TargetSummary } from "./target_summary";
+import { SettingsForm } from "../../app/settings_form";
 
 const toIso = (d?: DateObj) => (d ? `${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}` : "");
 const fromIso = (s?: string): DateObj | undefined => {
@@ -112,6 +113,14 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           />
         </Column>
       </Columns>
+
+      <Rows spacing="1u">
+        <Title size="xsmall">{intl.formatMessage({ defaultMessage: "Church gateway", description: "Heading of the gateway address and key block in the publish settings" })}</Title>
+        <Text size="small" tone="secondary">
+          {intl.formatMessage({ defaultMessage: "Where the slides are sent. Saved in this browser; the same settings as in the app's Settings.", description: "Explains the gateway block" })}
+        </Text>
+        <SettingsForm onClose={() => {}} onSaved={() => setTouched(true)} />
+      </Rows>
 
       {!settings.usage?.from && !settings.usage?.to && (
         <Checkbox
