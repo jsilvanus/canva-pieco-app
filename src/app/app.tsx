@@ -18,6 +18,7 @@ import {
   Text,
   Title,
 } from "@canva/app-ui-kit";
+import { BUILD_VERSION } from "../build-version.mjs";
 import { CONFIG } from "../config.mjs";
 import { getGatewayStatus } from "../services/gateway-api.mjs";
 import { SettingsForm } from "./settings_form";
@@ -80,6 +81,9 @@ export function App() {
     <Box padding="2u">
       <Rows spacing="2u">
         <Rows spacing="1u">
+          <Text size="small" tone="tertiary">
+            {intl.formatMessage({ defaultMessage: "Build v{version}", description: "Small developer build version label" }, { version: BUILD_VERSION })}
+          </Text>
           <Columns spacing="1u" alignY="center">
             <Column>
               <Title size="small">{CONFIG.appName}</Title>

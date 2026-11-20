@@ -42,6 +42,23 @@ function createMockExport() {
 }
 
 /**
+ * Reads the current Canva design's title for prefilling name fields.
+ * Returns "" when unavailable or outside Canva (mock title in dev).
+ */
+export async function getDesignTitle() {
+  if (!isRunningInCanva()) {
+    return "Sunday Service Presentation (Mock)";
+  }
+  try {
+    const { getDesignMetadata } = await import("@canva/design");
+    const metadata = await getDesignMetadata();
+    return typeof metadata?.title === "string" ? metadata.title.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Requests an uncompressed multi-page export from Canva.
  * Returns { status: 'completed' | 'aborted', title: string, exportBlobs: Array<{ url: string, pageNumber: number }> }
  */

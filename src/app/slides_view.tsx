@@ -23,7 +23,7 @@ import {
   TextInput,
   Title,
 } from "@canva/app-ui-kit";
-import { exportDesignPages, isRunningInCanva, openExternalUrl } from "../services/canva-sdk.mjs";
+import { exportDesignPages, getDesignTitle, isRunningInCanva, openExternalUrl } from "../services/canva-sdk.mjs";
 import {
   controlSlide,
   createGoLiveList,
@@ -51,6 +51,7 @@ const INITIAL_SETUP: Setup = { pipelineId: "pipgm1", piOutput: "pi1", projector:
 export function SlidesView({ notify, showProgress, clearProgress, busy, active, onPipelineChange }: PanelProps & { onPipelineChange: (pipelineId: string) => void }) {
   const intl = useIntl();
   const [step, setStep] = useState<Step>("push");
+  const [designName, setDesignName] = useState("");
   const [serviceDate, setServiceDate] = useState("");
   const [staged, setStaged] = useState<Staged | null>(null);
   const [askPermanent, setAskPermanent] = useState(false);
@@ -58,6 +59,16 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
   const [settingUp, setSettingUp] = useState(false);
   const [live, setLive] = useState<Live | null>(null);
   const [golive, setGolive] = useState<GoLiveList | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getDesignTitle().then((title) => {
+      if (!cancelled && title) setDesignName((prev) => prev || title);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handlePush = async (permanentConfirmed = false) => {
     let useAt = null;
@@ -91,12 +102,13 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
         notify(intl.formatMessage({ defaultMessage: "No pages were exported from Canva.", description: "Error when the export has no pages" }), "critical");
         return;
       }
+      const resolvedTitle = designName.trim() || exported.title || "Canva Slides";
       showProgress(30, intl.formatMessage({ defaultMessage: "Sending {count, plural, one {# slide} other {# slides}} to the church…", description: "Progress while slides are uploaded" }, { count: pages.length }));
-      const task = await pushContent({ title: exported.title || "Canva Slides", pages, useAt });
+      const task = await pushContent({ title: resolvedTitle, pages, useAt });
       showTask(task);
       // The gateway downloads the pages, Pi Program unpacks them and makes the thumbnails.
       const finished = await waitForTask(task.taskId, { onUpdate: showTask });
-      setStaged({ presentationId: finished.presentationId || task.presentationId || "", itemId: finished.itemId || task.itemId || "", title: exported.title || "Canva Presentation", pages });
+      setStaged({ presentationId: finished.presentationId || task.presentationId || "", itemId: finished.itemId || task.itemId || "", title: designName.trim() || exported.title || "Canva Presentation", pages });
       clearProgress();
       setStep("setup");
       notify(intl.formatMessage({ defaultMessage: "Sent {count, plural, one {# slide} other {# slides}} to church storage.", description: "Success after the upload" }, { count: pages.length }), "positive");
@@ -164,7 +176,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       </Tabs>
 
       {step === "push" && (
-        <PushStep serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} askPermanent={askPermanent} onCancelPermanent={() => setAskPermanent(false)} onPush={() => handlePush(false)} onConfirmPermanent={() => handlePush(true)} onNext={() => setStep("setup")} />
+        <PushStep designName={designName} onDesignNameChange={setDesignName} serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} askPermanent={askPermanent} onCancelPermanent={() => setAskPermanent(false)} onPush={() => handlePush(false)} onConfirmPermanent={() => handlePush(true)} onNext={() => setStep("setup")} />
       )}
       {step === "setup" && staged && <SetupStep staged={staged} setup={setup} onChange={setSetup} busy={settingUp} onApply={handleGoLive} />}
       {step === "live" && live && <LiveStep live={live} active={active} onChange={setLive} notify={notify} onReconfigure={() => setStep("setup")} golive={golive} />}
@@ -173,6 +185,8 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
 }
 
 function PushStep({
+  designName,
+  onDesignNameChange,
   serviceDate,
   onServiceDateChange,
   staged,
@@ -183,6 +197,8 @@ function PushStep({
   onCancelPermanent,
   onConfirmPermanent,
 }: {
+  designName: string;
+  onDesignNameChange: (value: string) => void;
   serviceDate: string;
   onServiceDateChange: (value: string) => void;
   staged: Staged | null;
@@ -198,6 +214,12 @@ function PushStep({
 
   return (
     <Rows spacing="2u">
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Name", description: "Label of the presentation name field" })}
+        labelMarker="optional"
+        value={designName}
+        control={(props) => <TextInput {...props} onChange={onDesignNameChange} />}
+      />
       <Text>
         {intl.formatMessage({
           defaultMessage: "Export the slides of this design into Pi Program's church storage. Pushing stores the content without changing the live screens.",

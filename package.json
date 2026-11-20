@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "check": "tsc -p . && eslint src && vite build",
     "test": "node --test test/*.test.mjs",
-    "build:js": "VITE_GATEWAY_API_KEY= VITE_SIGNAGE_PUSH_KEY= vite build -c vite.js-only.config.mjs",
+    "build:js": "node scripts/build-js.mjs",
     "lint": "eslint src",
     "typecheck": "tsc -p ."
   },
