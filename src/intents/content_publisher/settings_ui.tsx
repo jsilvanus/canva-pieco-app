@@ -6,7 +6,6 @@ import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/
 import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
 import { SettingsForm } from "../../app/settings_form";
-import { getDesignTitle } from "../../services/canva-sdk.mjs";
 import { listScreens } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
@@ -57,18 +56,6 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
     } catch (err) {
       setScreenList(screenListFailed(err));
     }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getDesignTitle().then((title) => {
-      if (!cancelled && title) {
-        setSettings((prev) => (prev.name ? prev : { ...prev, name: title }));
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
