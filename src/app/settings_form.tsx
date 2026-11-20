@@ -4,7 +4,7 @@ import { Button, Columns, Column, FormField, Rows, TextInput } from "@canva/app-
 import { CONFIG, saveRuntimeSettings, clearRuntimeSettings } from "../config.mjs";
 
 /** Gateway address and access key, kept in this browser's storage (see config.mjs). */
-export function SettingsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+export function SettingsForm({ onClose, onSaved }: { onClose?: () => void; onSaved: () => void }) {
   const intl = useIntl();
   const [gatewayUrl, setGatewayUrl] = useState(CONFIG.gatewayUrl);
   const [gatewayApiKey, setGatewayApiKey] = useState(CONFIG.gatewayApiKey);
@@ -78,11 +78,13 @@ export function SettingsForm({ onClose, onSaved }: { onClose: () => void; onSave
             {intl.formatMessage({ defaultMessage: "Use defaults", description: "Clears the saved gateway settings" })}
           </Button>
         </Column>
-        <Column width="content">
-          <Button variant="tertiary" onClick={onClose}>
-            {intl.formatMessage({ defaultMessage: "Close", description: "Closes the settings form" })}
-          </Button>
-        </Column>
+        {onClose && (
+          <Column width="content">
+            <Button variant="tertiary" onClick={onClose}>
+              {intl.formatMessage({ defaultMessage: "Close", description: "Closes the settings form" })}
+            </Button>
+          </Column>
+        )}
       </Columns>
     </Rows>
   );

@@ -1,6 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
-import { Alert, Badge, Box, Button, CogIcon, Columns, Column, ProgressBar, Rows, SegmentedControl, Text, Title } from "@canva/app-ui-kit";
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Columns,
+  Column,
+  ProgressBar,
+  Rows,
+  SegmentedControl,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  Title,
+} from "@canva/app-ui-kit";
 import { CONFIG } from "../config.mjs";
 import { getGatewayStatus } from "../services/gateway-api.mjs";
 import { SettingsForm } from "./settings_form";
@@ -14,8 +31,8 @@ const HEALTH_INTERVAL_MS = 15000;
 export function App() {
   const intl = useIntl();
   const [mode, setMode] = useState<"slides" | "graphics">("slides");
+  const [activeTab, setActiveTab] = useState<"export" | "settings">("export");
   const [gatewayStatus, setGatewayStatus] = useState<"online" | "simulated" | "offline" | "checking">("checking");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [notice, setNotice] = useState<{ message: string; tone: NoticeTone } | null>(null);
   const [progress, setProgress] = useState<{ percent: number; label: string } | null>(null);
   const [pipelineId, setPipelineId] = useState("pipgm1");
@@ -42,11 +59,11 @@ export function App() {
   }, [pipelineId]);
 
   useEffect(() => {
-    if (settingsOpen) return undefined;
+    if (activeTab === "settings") return undefined;
     checkGatewayHealth();
     const timer = setInterval(checkGatewayHealth, HEALTH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [checkGatewayHealth, settingsOpen]);
+  }, [checkGatewayHealth, activeTab]);
 
   const statusBadge = (
     {
@@ -71,50 +88,10 @@ export function App() {
               <Badge tone={statusBadge.tone} text={statusBadge.text} tooltipLabel={CONFIG.gatewayUrl} />
             </Column>
           </Columns>
-          <Columns spacing="1u" alignY="center">
-            <Column>
-              <Text size="small" tone="secondary" lineClamp={1}>
-                {CONFIG.gatewayUrl}
-              </Text>
-            </Column>
-            <Column width="content">
-              <Button
-                variant="tertiary"
-                icon={CogIcon}
-                onClick={() => setSettingsOpen((open) => !open)}
-                pressed={settingsOpen}
-                ariaLabel={intl.formatMessage({ defaultMessage: "Gateway settings", description: "Button that opens the gateway address and access key form" })}
-                tooltipLabel={intl.formatMessage({ defaultMessage: "Gateway settings", description: "Button that opens the gateway address and access key form" })}
-              />
-            </Column>
-          </Columns>
+          <Text size="small" tone="secondary" lineClamp={1}>
+            {CONFIG.gatewayUrl}
+          </Text>
         </Rows>
-
-        {settingsOpen && (
-          <SettingsForm
-            onClose={() => setSettingsOpen(false)}
-            onSaved={() => {
-              setSettingsOpen(false);
-              setGatewayStatus("checking");
-            }}
-          />
-        )}
-
-        <SegmentedControl
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "slides", label: intl.formatMessage({ defaultMessage: "Slides", description: "Mode for presenting slides on the projectors" }) },
-            { value: "graphics", label: intl.formatMessage({ defaultMessage: "ATEM graphics", description: "Mode for flying graphics onto the ATEM stream" }) },
-          ]}
-        />
-
-        {progress && (
-          <Rows spacing="0.5u">
-            <Text size="small">{progress.label}</Text>
-            <ProgressBar value={progress.percent} ariaLabel={progress.label} />
-          </Rows>
-        )}
 
         {notice && (
           <Alert tone={notice.tone} onDismiss={() => setNotice(null)}>
@@ -122,21 +99,68 @@ export function App() {
           </Alert>
         )}
 
-        <Box>
-          {/* Both modes stay mounted so a staged presentation or loaded deck survives switching. */}
-          <Box display={mode === "slides" ? "block" : "none"}>
-            <SlidesView {...shared} active={mode === "slides"} onPipelineChange={setPipelineId} />
-          </Box>
-          <Box display={mode === "graphics" ? "block" : "none"}>
-            <GraphicsView {...shared} active={mode === "graphics"} />
-          </Box>
-        </Box>
+        <Tabs activeId={activeTab} onSelect={(id) => setActiveTab(id === "settings" ? "settings" : "export")}>
+          <TabList align="stretch">
+            <Tab id="export">
+              {intl.formatMessage({ defaultMessage: "Export", description: "Tab label for exporting slides and graphics" })}
+            </Tab>
+            <Tab id="settings">
+              {intl.formatMessage({ defaultMessage: "Settings", description: "Tab label for gateway and signage settings" })}
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel id="export">
+              <Box paddingTop="2u">
+                <Rows spacing="2u">
+                  <SegmentedControl
+                    value={mode}
+                    onChange={setMode}
+                    options={[
+                      { value: "slides", label: intl.formatMessage({ defaultMessage: "Slides", description: "Mode for presenting slides on the projectors" }) },
+                      { value: "graphics", label: intl.formatMessage({ defaultMessage: "ATEM graphics", description: "Mode for flying graphics onto the ATEM stream" }) },
+                    ]}
+                  />
 
-        {gatewayStatus === "offline" && (
-          <Button variant="tertiary" onClick={checkGatewayHealth} stretch>
-            {intl.formatMessage({ defaultMessage: "Check the gateway again", description: "Button that re-checks the gateway connection" })}
-          </Button>
-        )}
+                  {progress && (
+                    <Rows spacing="0.5u">
+                      <Text size="small">{progress.label}</Text>
+                      <ProgressBar value={progress.percent} ariaLabel={progress.label} />
+                    </Rows>
+                  )}
+
+                  <Box>
+                    {/* Both modes stay mounted so a staged presentation or loaded deck survives switching. */}
+                    <Box display={mode === "slides" ? "block" : "none"}>
+                      <SlidesView {...shared} active={mode === "slides"} onPipelineChange={setPipelineId} />
+                    </Box>
+                    <Box display={mode === "graphics" ? "block" : "none"}>
+                      <GraphicsView {...shared} active={mode === "graphics"} />
+                    </Box>
+                  </Box>
+
+                  {gatewayStatus === "offline" && (
+                    <Button variant="tertiary" onClick={checkGatewayHealth} stretch>
+                      {intl.formatMessage({ defaultMessage: "Check the gateway again", description: "Button that re-checks the gateway connection" })}
+                    </Button>
+                  )}
+                </Rows>
+              </Box>
+            </TabPanel>
+            <TabPanel id="settings">
+              <Box paddingTop="2u">
+                <SettingsForm
+                  onSaved={() => {
+                    setGatewayStatus("checking");
+                    notify(
+                      intl.formatMessage({ defaultMessage: "Settings saved.", description: "Notice shown after saving gateway settings" }),
+                      "positive",
+                    );
+                  }}
+                />
+              </Box>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Rows>
     </Box>
   );
