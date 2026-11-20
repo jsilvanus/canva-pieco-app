@@ -21,11 +21,7 @@ const result = spawnSync(viteBin, ["build", "-c", "vite.js-only.config.mjs"], {
   cwd: rootDir,
   stdio: "inherit",
   shell: process.platform === "win32",
-  env: {
-    ...process.env,
-    VITE_GATEWAY_API_KEY: "",
-    VITE_SIGNAGE_PUSH_KEY: "",
-  },
+  env: { ...process.env },
 });
 
 if (result.error) {

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
-import { Alert, Badge, Box, Checkbox, Columns, Column, DateInput, FormField, Rows, Tab, TabList, TabPanel, TabPanels, Tabs, Text, TextInput, Title } from "@canva/app-ui-kit";
+import { Alert, Badge, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import type { DateObj } from "@canva/app-ui-kit";
 import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
 import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
-import { SettingsForm } from "../../app/settings_form";
 import { listScreens } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
@@ -39,7 +38,6 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
     ...decodePublishRef(invocationContext.publishRef),
     targetId: invocationContext.outputType?.id,
   }));
-  const [activeTab, setActiveTab] = useState<"export" | "settings">("export");
   const [publishError, setPublishError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [screenList, setScreenList] = useState<ScreenListState>(screenListInitialState);
@@ -109,6 +107,24 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
         {intl.formatMessage({ defaultMessage: "Build v{version}", description: "Small developer build version label" }, { version: BUILD_VERSION })}
       </Text>
 
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Name", description: "Label of the presentation name field" })}
+        description={
+          isSignage
+            ? intl.formatMessage({
+                defaultMessage: "Title shown in Sissi (1–200 characters), for example “Sunday service 15.11.”",
+                description: "Help text under the name field when signage is selected",
+              })
+            : intl.formatMessage({
+                defaultMessage: "Shown in Pi Program, for example “Sunday service 15.11.”",
+                description: "Help text under the name field",
+              })
+        }
+        value={settings.name ?? ""}
+        error={showErrors && errors.includes("name")}
+        control={(props) => <TextInput {...props} onChange={(name) => update({ name })} />}
+      />
+
       <Columns spacing="1u" alignY="center">
         <Column>
           <Title size="small">{intl.formatMessage({ defaultMessage: "Keskuskirkko", description: "Heading of the publish settings" })}</Title>
@@ -125,123 +141,68 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
         </Column>
       </Columns>
 
-      <Tabs activeId={activeTab} onSelect={(id) => setActiveTab(id === "settings" ? "settings" : "export")}>
-        <TabList align="stretch">
-          <Tab id="export">
-            {intl.formatMessage({ defaultMessage: "Export", description: "Tab label for publish export settings" })}
-          </Tab>
-          <Tab id="settings">
-            {intl.formatMessage({ defaultMessage: "Settings", description: "Tab label for gateway and signage settings" })}
-          </Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel id="export">
-            <Box paddingTop="2u">
-              <Rows spacing="2u">
-                <FormField
-                  label={intl.formatMessage({ defaultMessage: "Name", description: "Label of the presentation name field" })}
-                  description={
-                    isSignage
-                      ? intl.formatMessage({
-                          defaultMessage: "Title shown in Sissi (1–200 characters), for example “Sunday service 15.11.”",
-                          description: "Help text under the name field when signage is selected",
-                        })
-                      : intl.formatMessage({
-                          defaultMessage: "Shown in Pi Program, for example “Sunday service 15.11.”",
-                          description: "Help text under the name field",
-                        })
-                  }
-                  value={settings.name ?? ""}
-                  error={showErrors && errors.includes("name")}
-                  control={(props) => <TextInput {...props} onChange={(name) => update({ name })} />}
-                />
+      {target ? (
+        <TargetSummary target={target} screen={selectedScreen} />
+      ) : (
+        <Text tone="secondary">
+          {intl.formatMessage({ defaultMessage: "Choose where the slides go.", description: "Shown before a publish target is chosen" })}
+        </Text>
+      )}
 
-                {target ? (
-                  <TargetSummary target={target} screen={selectedScreen} />
-                ) : (
-                  <Text tone="secondary">
-                    {intl.formatMessage({ defaultMessage: "Choose where the slides go.", description: "Shown before a publish target is chosen" })}
-                  </Text>
-                )}
+      {target && !target.enabled && (
+        <Alert tone="warn">
+          {intl.formatMessage({ defaultMessage: "This target is not available yet. Choose another one.", description: "Shown when a disabled target is chosen" })}
+        </Alert>
+      )}
 
-                {target && !target.enabled && (
-                  <Alert tone="warn">
-                    {intl.formatMessage({ defaultMessage: "This target is not available yet. Choose another one.", description: "Shown when a disabled target is chosen" })}
-                  </Alert>
-                )}
+      {publishError != null && (
+        <Alert tone="critical">
+          {intl.formatMessage({ defaultMessage: "Publishing failed. Check the settings and try again.", description: "Shown after a failed publish" })}
+          {publishError ? intl.formatMessage({ defaultMessage: " Details: {detail}", description: "Detail of a failed publish" }, { detail: publishError }) : null}
+        </Alert>
+      )}
 
-                {publishError != null && (
-                  <Alert tone="critical">
-                    {intl.formatMessage({ defaultMessage: "Publishing failed. Check the settings and try again.", description: "Shown after a failed publish" })}
-                    {publishError ? intl.formatMessage({ defaultMessage: " Details: {detail}", description: "Detail of a failed publish" }, { detail: publishError }) : null}
-                  </Alert>
-                )}
+      {isSignage ? (
+        <SignageFields
+          signage={settings.signage ?? {}}
+          screenList={screenList}
+          errors={errors}
+          showErrors={showErrors}
+          onRetryScreens={() => void loadScreens()}
+          onChange={updateSignage}
+        />
+      ) : (
+        <Columns spacing="1u">
+          <Column>
+            <FormField
+              label={intl.formatMessage({ defaultMessage: "Used on", description: "Label of the first (or only) date the slides are used" })}
+              labelMarker="optional"
+              value={fromIso(settings.usage?.from)}
+              error={showErrors && errors.includes("date")}
+              control={(props) => <DateInput {...props} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, from: toIso(d) } })} />}
+            />
+          </Column>
+          <Column>
+            <FormField
+              label={intl.formatMessage({ defaultMessage: "Until", description: "Label of the optional last date of a date range" })}
+              labelMarker="optional"
+              value={fromIso(settings.usage?.to)}
+              error={showErrors && errors.includes("date") && Boolean(settings.usage?.to)}
+              control={(props) => (
+                <DateInput {...props} min={fromIso(settings.usage?.from)} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, to: toIso(d) || undefined } })} />
+              )}
+            />
+          </Column>
+        </Columns>
+      )}
 
-                {isSignage ? (
-                  <SignageFields
-                    signage={settings.signage ?? {}}
-                    screenList={screenList}
-                    errors={errors}
-                    showErrors={showErrors}
-                    onRetryScreens={() => void loadScreens()}
-                    onChange={updateSignage}
-                  />
-                ) : (
-                  <Columns spacing="1u">
-                    <Column>
-                      <FormField
-                        label={intl.formatMessage({ defaultMessage: "Used on", description: "Label of the first (or only) date the slides are used" })}
-                        labelMarker="optional"
-                        value={fromIso(settings.usage?.from)}
-                        error={showErrors && errors.includes("date")}
-                        control={(props) => <DateInput {...props} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, from: toIso(d) } })} />}
-                      />
-                    </Column>
-                    <Column>
-                      <FormField
-                        label={intl.formatMessage({ defaultMessage: "Until", description: "Label of the optional last date of a date range" })}
-                        labelMarker="optional"
-                        value={fromIso(settings.usage?.to)}
-                        error={showErrors && errors.includes("date") && Boolean(settings.usage?.to)}
-                        control={(props) => (
-                          <DateInput {...props} min={fromIso(settings.usage?.from)} onChange={(d?: DateObj) => update({ usage: { ...settings.usage, to: toIso(d) || undefined } })} />
-                        )}
-                      />
-                    </Column>
-                  </Columns>
-                )}
-
-                {!isSignage && !settings.usage?.from && !settings.usage?.to && (
-                  <Checkbox
-                    label={intl.formatMessage({ defaultMessage: "No date: this is a permanent asset that stays in church storage until it is deleted", description: "Confirmation shown when no use date is given" })}
-                    checked={settings.permanent === true}
-                    onChange={(_, checked) => update({ permanent: checked })}
-                  />
-                )}
-              </Rows>
-            </Box>
-          </TabPanel>
-          <TabPanel id="settings">
-            <Box paddingTop="2u">
-              <Rows spacing="1u">
-                <Title size="xsmall">{intl.formatMessage({ defaultMessage: "Church gateway", description: "Heading of the gateway address and key block in the publish settings" })}</Title>
-                <Text size="small" tone="secondary">
-                  {isSignage
-                    ? intl.formatMessage({
-                        defaultMessage: "Set the Signage (Sissi) address here. Saved in this browser; the same settings as in the app's Settings.",
-                        description: "Explains the gateway/signage URL block when signage is selected",
-                      })
-                    : intl.formatMessage({
-                        defaultMessage: "Where the slides are sent. Saved in this browser; the same settings as in the app's Settings.",
-                        description: "Explains the gateway block",
-                      })}
-                </Text>
-                <SettingsForm onSaved={() => setTouched(true)} />
-              </Rows>
-            </Box>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+      {!isSignage && !settings.usage?.from && !settings.usage?.to && (
+        <Checkbox
+          label={intl.formatMessage({ defaultMessage: "No date: this is a permanent asset that stays in church storage until it is deleted", description: "Confirmation shown when no use date is given" })}
+          checked={settings.permanent === true}
+          onChange={(_, checked) => update({ permanent: checked })}
+        />
+      )}
     </Rows>
   );
 }
