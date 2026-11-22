@@ -19,7 +19,9 @@ export type PublishSettingsData = {
   /** Confirmed: no use date, the slides are a permanent asset. */
   permanent?: boolean;
   signage?: SignageSettings;
+  goLive?: GoLiveSettings;
 };
+export type GoLiveSettings = { on: boolean; feed: string; piOutput: string; projector: string; ftb: boolean };
 export const TARGETS: Target[];
 export function targetById(id: string | undefined, options?: TargetOptions): Target | null;
 export function validatePublishSettings(settings: PublishSettingsData, options?: TargetOptions): {
