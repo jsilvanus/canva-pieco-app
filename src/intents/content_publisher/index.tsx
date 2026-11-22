@@ -11,7 +11,7 @@ import type {
   RenderSettingsUiRequest,
 } from "@canva/intents/content";
 import { CONFIG } from "../../config.mjs";
-import { pushContent } from "../../services/gateway-api.mjs";
+import { createGoLiveList, pushContent, waitForTask } from "../../services/gateway-api.mjs";
 import { renderInCanva } from "../../app/mount";
 import { getTargets, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
 import type { Target } from "../publish-targets.mjs";
@@ -83,8 +83,21 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
   }
 
   try {
-    await pushContent(buildPushPayload(settings, pages));
-    return { status: "completed" };
+    const task = await pushContent(buildPushPayload(settings, pages));
+    const goLive = settings.goLive;
+    if (!goLive?.on) return { status: "completed" };
+    // Publish and go live: wait until the slides are in Pi Program, save the Go live list and send the user to its run link.
+    // The push answer often carries the library item already; only wait when it does not.
+    const finished = task.itemId ? task : await waitForTask(task.taskId);
+    const list = await createGoLiveList({
+      itemId: finished.itemId || task.itemId || "",
+      title: settings.name,
+      feed: goLive.feed,
+      piOutput: goLive.piOutput,
+      projector: goLive.projector,
+      ftb: goLive.ftb,
+    });
+    return list.link ? { status: "completed", postPublishAction: { type: "redirect", url: list.link } } : { status: "completed" };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return { status: "app_error", message: `Could not send to the church gateway: ${detail}`, appDefinedPayload: detail.slice(0, 300) };

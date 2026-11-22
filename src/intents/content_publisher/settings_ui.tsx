@@ -9,6 +9,7 @@ import { listScreens } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
 import { SignageFields } from "./signage_fields";
+import { GoLiveFields } from "./go_live_fields";
 import {
   findScreenById,
   isScreenNotFoundPayload,
@@ -195,6 +196,8 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           </Column>
         </Columns>
       )}
+
+      {!isSignage && <GoLiveFields value={settings.goLive} onChange={(goLive) => update({ goLive })} />}
 
       {!isSignage && !settings.usage?.from && !settings.usage?.to && (
         <Checkbox
