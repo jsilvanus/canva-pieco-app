@@ -10,7 +10,7 @@ type Options = { movement: string; autoHideMs: number; slot: number; mediaPlayer
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 /** ATEM graphics: load the design as a deck of overlays and fly them on air with the flying key. */
-export function GraphicsView({ notify, showProgress, clearProgress, busy, active }: PanelProps) {
+export function GraphicsView({ notify, showProgress, clearProgress, busy, active, canOperate }: PanelProps) {
   const intl = useIntl();
   const [pages, setPages] = useState<Page[]>([]);
   const [cued, setCued] = useState(1);
@@ -211,11 +211,11 @@ export function GraphicsView({ notify, showProgress, clearProgress, busy, active
         </Column>
       </Columns>
       {onAir ? (
-        <Button variant="primary" onClick={offAir} stretch>
+        <Button variant="primary" onClick={offAir} disabled={!canOperate} stretch>
           {intl.formatMessage({ defaultMessage: "Take off air (Space / Esc)", description: "Removes the graphic from the stream" })}
         </Button>
       ) : (
-        <Button variant="primary" onClick={fly} loading={flying} disabled={flying} stretch>
+        <Button variant="primary" onClick={fly} loading={flying} disabled={flying || !canOperate} stretch>
           {intl.formatMessage({ defaultMessage: "Fly on air (Space)", description: "Puts the cued graphic on the stream" })}
         </Button>
       )}
