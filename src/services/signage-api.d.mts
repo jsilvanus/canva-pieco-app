@@ -11,7 +11,7 @@ export type SignageScreen = {
   playlistVersion: number;
 };
 export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number };
-export type SignagePushRequest = { screenId: string; mode?: "append" | "replace"; title: string; pages: SignagePage[] };
+export type SignagePushRequest = { screenId: string; mode?: "append" | "replace"; enabled?: boolean; title: string; pages: SignagePage[] };
 export type SignagePushAccepted = { pushId: string; taskId: string; state: "queued"; screenId: string; isSimulated?: boolean };
 export type SignagePushStatus = {
   pushId: string;

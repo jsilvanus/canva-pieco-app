@@ -17,6 +17,8 @@ const USER_MESSAGES = {
   ENTRY_NOT_FOUND: "That playlist entry no longer exists",
   PUSH_NOT_FOUND: "The publish is no longer known to signage. Publish again",
   INVALID_MODE: null,
+  INVALID_ENABLED: null,
+  FORBIDDEN: "You may add slides to this screen but not put them live. Publish without \"Enable now\"",
   INVALID_TITLE: null,
   INVALID_PAGES: null,
   INVALID_KIND: null,
@@ -151,8 +153,8 @@ async function apiRequest(path, options = {}) {
 // ---- Dev mock: used only outside Canva, in dev, when no signage address is set ----
 
 const MOCK_SCREENS = [
-  { id: "lobby", name: "Lobby (simulated)", orientation: "landscape", width: 1920, height: 1080, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 3, playlistVersion: 1 },
-  { id: "hall", name: "Hall (simulated)", orientation: "vertical", width: 1080, height: 1920, defaultImageSeconds: 8, maxVideoSeconds: 60, entryCount: 0, playlistVersion: 1 },
+  { id: "lobby", name: "Lobby (simulated)", orientation: "landscape", width: 1920, height: 1080, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 3, enabledEntryCount: 3, playlistVersion: 1 },
+  { id: "hall", name: "Hall (simulated)", orientation: "vertical", width: 1080, height: 1920, defaultImageSeconds: 8, maxVideoSeconds: 60, entryCount: 0, enabledEntryCount: 0, playlistVersion: 1 },
 ];
 const MOCK_PUSH_MS = 3000;
 const mockPushes = new Map();
@@ -198,10 +200,11 @@ export async function listScreens(options = {}) {
 }
 
 /**
- * Starts a push (202). `pages` are `{ pageNumber, url, kind?, seconds? }` in play order.
+ * Starts a push (202). `enabled` false (default) adds the slides disabled; true puts them live at once.
+ * `pages` are `{ pageNumber, url, kind?, seconds? }` in play order.
  * Resolves with { pushId, taskId, state, screenId }. Follow it with waitForSignagePush().
  */
-export async function pushSignage({ screenId, mode = "append", title, pages }, options = {}) {
+export async function pushSignage({ screenId, mode = "append", enabled = false, title, pages }, options = {}) {
   if (await useMock(options)) {
     const pushId = `sim_${Date.now()}_${mockPushes.size}`;
     mockPushes.set(pushId, { startedAt: (options.now || Date.now)(), total: pages.length, screenId });
@@ -214,6 +217,7 @@ export async function pushSignage({ screenId, mode = "append", title, pages }, o
     body: JSON.stringify({
       screenId,
       mode,
+      enabled,
       title,
       pages: pages.map((p) => ({
         pageNumber: p.pageNumber,
@@ -234,7 +238,7 @@ export async function getSignagePush(pushId, options = {}) {
 
 /** Progress text for the UI, e.g. "Downloading 2/5". */
 export function describeSignagePush(status) {
-  if (status.state === "ready") return "Published to signage";
+  if (status.state === "ready") return "Added to signage";
   if (status.state === "failed") return "Publishing failed";
   const { done = 0, total = 0 } = status.pages || {};
   if (status.state === "queued") return "Waiting to start...";

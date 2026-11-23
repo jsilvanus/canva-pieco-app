@@ -37,10 +37,10 @@ export function buildPushPayload(
 
 export type SignageSettings = {
   screenId: string;
-  mode: "append" | "replace";
   secondsAll?: number;
   secondsByPage?: Record<string, number>;
-  confirmReplace?: boolean;
+  /** true = the slides go live at once (needs the operate right); false = added disabled. */
+  enableNow?: boolean;
 };
 export type TargetOptions = { signageUrl?: string };
 export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video" };
@@ -51,7 +51,7 @@ export function signageKindFor(file: SignageFile): "image" | "video" | undefined
 export function buildSignagePushPayload(
   settings: PublishSettingsData,
   files: SignageFile[],
-): { screenId: string; mode: "append" | "replace"; title: string; pages: SignagePushPage[] };
+): { screenId: string; mode: "append"; enabled: boolean; title: string; pages: SignagePushPage[] };
 export function encodeSignageSettings(sig: Partial<SignageSettings>): string;
 export function parseSignageSettings(
   text: string | undefined,

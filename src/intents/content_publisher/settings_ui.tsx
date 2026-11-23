@@ -30,7 +30,7 @@ const fromIso = (s?: string): DateObj | undefined => {
 };
 
 /**
- * Publish settings: a name and either signage options (screen, mode, seconds) or the date /
+ * Publish settings: a name and either signage options (screen, enable now, seconds) or the date /
  * permanent-asset fields for the Pi targets.
  */
 export function SettingsUi({ invocationContext, updatePublishSettings, registerOnContextChange }: RenderSettingsUiRequest) {

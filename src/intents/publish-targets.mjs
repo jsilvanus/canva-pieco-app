@@ -163,8 +163,6 @@ function validateSignageSettings(settings) {
   if (String(settings?.name ?? "").trim().length > 200) errors.push("name");
   const s = settings?.signage ?? {};
   if (!String(s.screenId ?? "").trim()) errors.push("screenId");
-  if (s.mode !== "append" && s.mode !== "replace") errors.push("mode");
-  if (s.mode === "replace" && s.confirmReplace !== true) errors.push("confirmReplace");
   const values = [];
   if (s.secondsAll !== undefined && s.secondsAll !== null) values.push(s.secondsAll);
   if (s.secondsByPage && typeof s.secondsByPage === "object") values.push(...Object.values(s.secondsByPage));
@@ -186,14 +184,16 @@ export function signageKindFor(file) {
 }
 
 /**
- * Body for POST /push. `settings` is { name, signage: { screenId, mode, secondsAll, secondsByPage } };
+ * Body for POST /push. `settings` is { name, signage: { screenId, enableNow, secondsAll, secondsByPage } };
  * `files` are { url, pageNumber?, kind? } in order. Seconds are never sent for video; `kind` only when certain.
  */
 export function buildSignagePushPayload(settings, files) {
   const s = settings.signage ?? {};
   return {
     screenId: s.screenId,
-    mode: s.mode ?? "append",
+    // Always an add. Items go in disabled (content publishing) unless "enable now" is on (a live change).
+    mode: "append",
+    enabled: s.enableNow === true,
     title: String(settings.name ?? "").trim(),
     pages: files.map((f, i) => {
       const pageNumber = f.pageNumber ?? i + 1;
@@ -211,10 +211,10 @@ export function buildSignagePushPayload(settings, files) {
 
 /** Serialises the signage settings for publishRef. */
 export function encodeSignageSettings(sig) {
-  const out = { screenId: sig?.screenId ?? "", mode: sig?.mode ?? "append" };
+  const out = { screenId: sig?.screenId ?? "" };
   if (sig?.secondsAll !== undefined) out.secondsAll = sig.secondsAll;
   if (sig?.secondsByPage) out.secondsByPage = sig.secondsByPage;
-  if (sig?.confirmReplace) out.confirmReplace = true;
+  if (sig?.enableNow) out.enableNow = true;
   return JSON.stringify(out);
 }
 
@@ -228,9 +228,9 @@ export function parseSignageSettings(text) {
   if (!o || typeof o !== "object") o = {};
   return {
     screenId: typeof o.screenId === "string" ? o.screenId : "",
-    mode: o.mode === "replace" ? "replace" : "append",
     ...(o.secondsAll !== undefined ? { secondsAll: o.secondsAll } : {}),
     secondsByPage: o.secondsByPage && typeof o.secondsByPage === "object" ? o.secondsByPage : {},
-    confirmReplace: o.confirmReplace === true,
+    // publishRefs from before 2026-11-23 may hold mode/confirmReplace; they are ignored (nothing goes live by itself).
+    enableNow: o.enableNow === true,
   };
 }
