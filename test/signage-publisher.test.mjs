@@ -63,22 +63,21 @@ test("screenList state transitions and SCREEN_NOT_FOUND detection", () => {
 
 test("mergeSignageSettings and updatePageSeconds normalize and clear fields", () => {
   let settings = { targetId: "signage", name: "Sunday" };
-  settings = mergeSignageSettings(settings, { screenId: "lobby", mode: "replace", confirmReplace: true, secondsAll: 12 });
+  settings = mergeSignageSettings(settings, { screenId: "lobby", enableNow: true, secondsAll: 12 });
   assert.deepEqual(settings.signage, {
     screenId: "lobby",
-    mode: "replace",
     secondsAll: 12,
     secondsByPage: {},
-    confirmReplace: true,
+    enableNow: true,
   });
 
   const byPage = updatePageSeconds(settings.signage.secondsByPage, 2, 20);
   settings = mergeSignageSettings(settings, { secondsByPage: byPage });
   assert.deepEqual(settings.signage.secondsByPage, { "2": 20 });
 
-  // Switching back to append clears confirmReplace; clearing secondsAll removes it.
-  settings = mergeSignageSettings(settings, { mode: "append", secondsAll: undefined });
-  assert.equal(settings.signage.confirmReplace, false);
+  // Clearing secondsAll removes it; enableNow stays until switched off.
+  settings = mergeSignageSettings(settings, { secondsAll: undefined });
+  assert.equal(settings.signage.enableNow, true);
   assert.equal("secondsAll" in settings.signage, false);
 });
 
@@ -153,6 +152,7 @@ test("publishSignageContent validates, builds payload, reports progress, and ret
     {
       screenId: "lobby",
       mode: "append",
+      enabled: false,
       title: "Sunday service",
       pages: [
         { pageNumber: 1, kind: "image", url: "https://cdn.example/1.png", seconds: 15 },

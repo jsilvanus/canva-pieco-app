@@ -68,7 +68,6 @@ export function isScreenNotFoundPayload(payload) {
 export function mergeSignageSettings(prevSettings, patch) {
   const current = parseSignageSettings(prevSettings?.signage);
   const next = { ...current, ...patch };
-  if (patch.mode === "append") next.confirmReplace = false;
   if (patch.secondsAll === undefined || patch.secondsAll === null || Number.isNaN(patch.secondsAll)) {
     delete next.secondsAll;
   }

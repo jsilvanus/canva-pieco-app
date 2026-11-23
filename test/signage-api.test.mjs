@@ -64,14 +64,15 @@ test("pushSignage: 202 body, image seconds sent, video seconds dropped", async (
   const accepted = { pushId: "push_1", taskId: "push_1", state: "queued", screenId: "lobby" };
   const f = fake(json(202, accepted));
   const res = await pushSignage(
-    { screenId: "lobby", mode: "replace", title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
+    { screenId: "lobby", mode: "append", enabled: true, title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
     opts(f),
   );
   assert.deepEqual(res, accepted);
   assert.equal(f.calls[0].init.method, "POST");
   assert.deepEqual(JSON.parse(f.calls[0].init.body), {
     screenId: "lobby",
-    mode: "replace",
+    mode: "append",
+    enabled: true,
     title: "Konsertti",
     pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video" }, { pageNumber: 3, url: "https://c" }],
   });

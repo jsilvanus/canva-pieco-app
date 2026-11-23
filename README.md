@@ -146,7 +146,7 @@ After the slides are pushed, the **Play** tab asks for the feed (Pi Program 1 to
 
 ## Signage (Sissi)
 
-The Content Publisher includes a **Signage (Sissi)** (`signage`) publish target alongside the Pi targets. It sends exported image slides and video directly to the Sissi signage service on the VPS (with screen selection, append/replace mode, and per-image duration in seconds) without involving the church Pi.
+The Content Publisher includes a **Signage (Sissi)** (`signage`) publish target alongside the Pi targets. It sends exported image slides and video directly to the Sissi signage service on the VPS (with screen selection, per-image duration in seconds, and an optional "Enable now"; slides are added to the playlist disabled by default and an operator turns them on in Sissi) without involving the church Pi.
 
 * **Configuration**: Set `VITE_SIGNAGE_URL` at build time (HTTPS URL including any path prefix, e.g. `https://host/signage`), or enter the signage URL in the app's **Settings** (saved in browser `localStorage`). The target is enabled only when a signage URL is configured.
 * **Status**: **Not yet tested against the real signage service** (pending first deployment of Sissi and spike S1 in Canva). Only unit tests with mock responses and local dev simulation have been run.

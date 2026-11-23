@@ -65,7 +65,7 @@ import {
   parseSignageSettings,
 } from "../src/intents/publish-targets.mjs";
 
-const sig = { targetId: "signage", name: "Viikko 47", signage: { screenId: "s1", mode: "append" } };
+const sig = { targetId: "signage", name: "Viikko 47", signage: { screenId: "s1" } };
 const url = { signageUrl: "https://h/signage" };
 
 test("signage: disabled without signageUrl, enabled with it; other targets unchanged", () => {
@@ -89,9 +89,9 @@ test("signage: validation rules", () => {
   const v = (patch, name = "Viikko 47") =>
     validatePublishSettings({ ...sig, name, signage: { ...sig.signage, ...patch } }, url).errors;
   assert.deepEqual(v({ screenId: "" }), ["screenId"]);
-  assert.deepEqual(v({ mode: "x" }), ["mode"]);
-  assert.deepEqual(v({ mode: "replace" }), ["confirmReplace"]);
-  assert.deepEqual(v({ mode: "replace", confirmReplace: true }), []);
+  // Old publishRefs with mode/confirmReplace are not an error; they are just ignored.
+  assert.deepEqual(v({ mode: "replace" }), []);
+  assert.deepEqual(v({ enableNow: true }), []);
   assert.deepEqual(v({ secondsAll: 0 }), ["seconds"]);
   assert.deepEqual(v({ secondsAll: 3601 }), ["seconds"]);
   assert.deepEqual(v({ secondsAll: 1.5 }), ["seconds"]);
@@ -103,7 +103,7 @@ test("signage: validation rules", () => {
 });
 
 test("signage: push payload seconds and kind rules", () => {
-  const s = { ...sig, signage: { screenId: "s1", mode: "replace", secondsAll: 10, secondsByPage: { 2: 20 } } };
+  const s = { ...sig, signage: { screenId: "s1", mode: "replace", enableNow: true, secondsAll: 10, secondsByPage: { 2: 20 } } };
   const p = buildSignagePushPayload(s, [
     { url: "https://c/a.png?x=1" },
     { url: "https://c/b.jpeg" },
@@ -113,7 +113,8 @@ test("signage: push payload seconds and kind rules", () => {
   ]);
   assert.deepEqual(p, {
     screenId: "s1",
-    mode: "replace",
+    mode: "append",
+    enabled: true,
     title: "Viikko 47",
     pages: [
       { pageNumber: 1, kind: "image", url: "https://c/a.png?x=1", seconds: 10 },
@@ -125,10 +126,15 @@ test("signage: push payload seconds and kind rules", () => {
   });
   const none = buildSignagePushPayload(sig, [{ url: "https://c/a.png" }]);
   assert.equal("seconds" in none.pages[0], false);
+  // Default: added disabled (content publishing), never a replace.
+  assert.equal(none.enabled, false);
+  assert.equal(none.mode, "append");
 });
 
 test("signage: settings round trip", () => {
-  const s = { screenId: "s1", mode: "replace", secondsAll: 8, secondsByPage: { 1: 5 }, confirmReplace: true };
+  const s = { screenId: "s1", secondsAll: 8, secondsByPage: { 1: 5 }, enableNow: true };
   assert.deepEqual(parseSignageSettings(encodeSignageSettings(s)), s);
-  assert.deepEqual(parseSignageSettings("nope"), { screenId: "", mode: "append", secondsByPage: {}, confirmReplace: false });
+  assert.deepEqual(parseSignageSettings("nope"), { screenId: "", secondsByPage: {}, enableNow: false });
+  // An old publishRef that asked for replace does not put anything live.
+  assert.equal(parseSignageSettings({ screenId: "s1", mode: "replace", confirmReplace: true }).enableNow, false);
 });

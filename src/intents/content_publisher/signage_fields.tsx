@@ -1,5 +1,5 @@
 import { useIntl } from "react-intl";
-import { Alert, Button, Checkbox, FormField, NumberInput, RadioGroup, Rows, Select, Text } from "@canva/app-ui-kit";
+import { Alert, Button, Checkbox, FormField, NumberInput, Rows, Select, Text } from "@canva/app-ui-kit";
 import type { SignageScreen } from "../../services/signage-api.mjs";
 import type { SignageSettings } from "../publish-targets.mjs";
 import { findScreenById, formatScreenOptionLabel, isValidSecondsValue } from "./signage-publisher.mjs";
@@ -14,7 +14,7 @@ type SignageFieldsProps = {
   onChange: (patch: Partial<SignageSettings>) => void;
 };
 
-/** Signage-specific publish settings: screen picker, playlist mode, confirmation, and default image seconds. */
+/** Signage-specific publish settings: screen picker, the Enable now switch, and default image seconds. */
 export function SignageFields({
   signage,
   screenList,
@@ -24,7 +24,6 @@ export function SignageFields({
   onChange,
 }: SignageFieldsProps) {
   const intl = useIntl();
-  const mode = signage.mode === "replace" ? "replace" : "append";
   const selectedScreen: SignageScreen | null = findScreenById(screenList.screens, signage.screenId);
 
   const screenOptions = screenList.screens.map((screen) => ({
@@ -92,47 +91,15 @@ export function SignageFields({
         )}
       />
 
-      <FormField
-        label={intl.formatMessage({ defaultMessage: "Playlist mode", description: "Label of the signage append/replace mode selector" })}
-        value={mode}
-        control={(props) => (
-          <RadioGroup<"append" | "replace">
-            {...props}
-            value={mode}
-            options={[
-              {
-                value: "append",
-                label: intl.formatMessage({ defaultMessage: "Add to end", description: "Signage mode that appends slides to the existing playlist" }),
-              },
-              {
-                value: "replace",
-                label: intl.formatMessage({ defaultMessage: "Replace playlist", description: "Signage mode that replaces the screen's current playlist" }),
-              },
-            ]}
-            onChange={(nextMode) => onChange({ mode: nextMode })}
-          />
-        )}
+      <Checkbox
+        label={intl.formatMessage({ defaultMessage: "Enable now", description: "Puts the published slides live on the signage screen at once" })}
+        description={intl.formatMessage({
+          defaultMessage: "Off: the slides are added to the playlist disabled and an operator turns them on. On: they play on the screen right away.",
+          description: "Explains the enable now switch for signage",
+        })}
+        checked={signage.enableNow === true}
+        onChange={(_, checked) => onChange({ enableNow: checked })}
       />
-
-      {mode === "replace" && (
-        <Checkbox
-          label={intl.formatMessage({
-            defaultMessage: "Replace what the screen is showing now",
-            description: "Required confirmation checkbox when Replace playlist mode is selected",
-          })}
-          checked={signage.confirmReplace === true}
-          onChange={(_, checked) => onChange({ confirmReplace: checked })}
-        />
-      )}
-
-      {showErrors && mode === "replace" && errors.includes("confirmReplace") && (
-        <Text size="small" tone="critical">
-          {intl.formatMessage({
-            defaultMessage: "Confirm replacing the current playlist before publishing.",
-            description: "Validation message when Replace playlist is chosen without confirmation",
-          })}
-        </Text>
-      )}
 
       <FormField
         label={intl.formatMessage({ defaultMessage: "Seconds per image (set all)", description: "Label of the global seconds-per-image field for signage" })}

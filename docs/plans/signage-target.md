@@ -1,6 +1,6 @@
 # Plan: "Signage (Sissi)" publish target
 
-Status: **plan, not built** (2026-11-19). No code changes in this PR.
+Status: built; amended 2026-11-23 (section 12: enabled/disabled entries, which overrides what follows about modes).
 
 Naming: the signage project is called **Sissi** (SiSSi in the signage roadmap). It is deployed as a Docker image behind Traefik on the VPS, so the app only needs its HTTPS base URL (a Traefik route); nothing in this plan depends on how the container is built. In the UI the target is labelled "Signage (Sissi)"; the code id stays `signage`.
 
@@ -15,7 +15,7 @@ Fields shown **only when signage is selected**:
 | Field | Behaviour |
 |---|---|
 | Screen | Picker filled from `GET /screens` (name, orientation, size). Refreshed whenever the settings panel opens. No create or delete of screens. |
-| Mode | "Add to end" (`append`, default) or "Replace playlist" (`replace`). Replace asks for a confirmation checkbox, because it removes what the screen shows now. |
+| Enable now | Checkbox, off by default (section 12). Off: the slides are added to the playlist **disabled**. On: they go live at once. There is no mode choice any more; the app always appends. |
 | Name | The existing name field; sent as `title` (1-200 chars). |
 | Seconds per image | One number field per image page (1-3600), prefilled with the screen's `defaultImageSeconds`, plus a "set all" field. |
 | Video pages | Show their duration read-only (no seconds field). |
@@ -121,3 +121,16 @@ Creating or deleting screens, reordering or removing entries (the admin page doe
 5. [x] **T5 Bundle and docs:** rebuild `dist-js` through the usual script (the file is committed in this repo), README "Signage (Sissi)" section stating it was never tested against the real service, tick the plan. After T4.
 
 After T1+T2 and again after T4 a reviewer agent checks the diff against this plan and the OpenAPI file.
+
+## 12. Enabled and disabled entries (Juha, 2026-11-23; overrides the mode field above)
+
+Contract: simple-smart-signage `docs/plans/step-1-web-signage.md` section 13 (PR #5 there).
+
+Adding to a playlist disabled is **content publishing** (Tunnus right `sissi:write`); enabling an entry is **making it live** (`sissi:operate`). So the push contract no longer has the app choose between append and replace:
+
+- The app always sends `mode: "append"` and `enabled: <enableNow>`. `enableNow` is off by default, so a normal publish puts the slides in the playlist but not on the screen; an operator enables them on the Sissi admin page.
+- "Enable now" is the optional live step. It needs the operate right. The service does not check rights yet (Tunnus is not built); when it does, a refusal comes back as `FORBIDDEN` and the app tells the user to publish without "Enable now".
+- "Replace playlist" and its confirmation checkbox are gone from the app. Replacing is done on the admin page by enabling the new items and disabling the old ones. The service still accepts `mode: replace` with `enabled: true` for scripts.
+- `publishRef` keeps `{ screenId, enableNow, secondsAll, secondsByPage }`. Old refs with `mode`/`confirmReplace` are read and ignored, so nothing goes live by accident.
+- Progress text on success reads "Added to signage".
+- Mock screens carry `enabledEntryCount` like the real `GET /screens`.
