@@ -146,6 +146,9 @@ const MOCK_SCREENS = [
   { id: "lobby", name: "Lobby (simulated)", orientation: "landscape", width: 1920, height: 1080, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 3, enabledEntryCount: 3, playlistVersion: 1 },
   { id: "hall", name: "Hall (simulated)", orientation: "vertical", width: 1080, height: 1920, defaultImageSeconds: 8, maxVideoSeconds: 60, entryCount: 0, enabledEntryCount: 0, playlistVersion: 1 },
 ];
+const MOCK_VIEWS = [
+  { id: "aikuistyo", name: "Aikuistyö (simulated)", kind: "view", orientation: "landscape", width: 1200, height: 630, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 0, enabledEntryCount: 0, playlistVersion: 1, rights: ["write", "operate"] },
+];
 const MOCK_PUSH_MS = 3000;
 const mockPushes = new Map();
 
@@ -182,11 +185,17 @@ function notConfigured() {
  * Options (all optional): baseUrl, pushKey, fetch, getToken, timeoutMs, mock.
  */
 export async function listScreens(options = {}) {
-  if (await useMock(options)) return MOCK_SCREENS.map((s) => ({ ...s }));
+  const kind = options.kind;
+  if (await useMock(options)) return (kind === "view" ? MOCK_VIEWS : MOCK_SCREENS).map((s) => ({ ...s }));
   if (!resolveBaseUrl(options)) throw notConfigured();
-  const data = await apiRequest("/screens", options);
+  const data = await apiRequest(`/screens${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`, options);
   if (!Array.isArray(data?.screens)) throw new SignageError("BAD_RESPONSE", 200, "Signage sent an answer the app could not read");
   return data.screens;
+}
+
+/** Lists only web views; aggregate targets are excluded by Sissi. */
+export function listViews(options = {}) {
+  return listScreens({ ...options, kind: "view" });
 }
 
 /**
