@@ -34,7 +34,7 @@ export function decodePublishRef(publishRef: string | undefined): PublishSetting
 export function buildPushPayload(
   settings: PublishSettingsData,
   pages: { url: string; pageNumber: number; name?: string }[],
-): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt: string; pages: { url: string; pageNumber: number; name?: string }[] };
+): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt?: string; pages: { url: string; pageNumber: number; name?: string }[] };
 
 export type SignageSettings = {
   screenId: string;
@@ -48,7 +48,7 @@ export type SignageSettings = {
   enableNow?: boolean;
 };
 export type TargetOptions = { signageUrl?: string };
-export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video" };
+export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video"; name?: string };
 export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
 export function getTargets(options?: TargetOptions): Target[];
 export function signageFallbackSize(orientation?: string): { width: number; height: number };
