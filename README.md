@@ -50,7 +50,7 @@ The panel is built the way Canva expects apps to be built:
 * **React** with Canva's **App UI Kit** (`@canva/app-ui-kit`): `AppUiProvider`, `Rows`, `Columns`, `Button`, `FormField`, `Select`, `Tabs`, `Switch`, `ImageCard`, `ProgressBar`, `Alert`. Canva's theme and styles, no custom CSS.
 * **Localization** with `@canva/app-i18n-kit` (`AppI18nProvider`) and `react-intl`. Every user-facing string is a message with a `description`; `babel-plugin-formatjs` gives each one the content-hash id Canva's translation tooling uses.
 * **Linting** with `@canva/app-eslint-plugin` (`apps` config) and TypeScript (`pnpm run lint`, `pnpm run typecheck`; both run in `pnpm run check`).
-* **Intents**: `src/canva-entry.mjs` registers Design Editor (this panel) and Content Publisher (`src/intents/content_publisher/`, laid out like Canva's content publisher example: `index.tsx`, `settings_ui.tsx`, `preview_ui.tsx`). The publish targets (PiProgram → ATEM or vertical projector, PiGraphics → stream, Saarnavideo later) are Canva output types; the settings form asks for a name and the date or date range, and the preview warns when the design size does not match the target's resolution. The upload is one classic-script file (`pnpm run build:js` → `dist-js/canva-pieco-app.js`).
+* **Intents**: `src/canva-entry.mjs` registers Design Editor (this panel) and Content Publisher (`src/intents/content_publisher/`, laid out like Canva's content publisher example: `index.tsx`, `settings_ui.tsx`, `preview_ui.tsx`). The publish targets are **Keskuskirkko (piProgram)** (one unified projector/stream output with PiProgram-managed sizing), **Keskuskirkko (ATEM)** (PiGraphics with an ATEM DVE animation), **Infonäytöt (Sissi)** (physical signage screens), **Verkkosivut (Sissi)** (Sissi web views with optional heading, description and link), and **Saarnavideo [later]**. PiProgram and ATEM targets support a use date/range. Sissi targets load the caller's writable screens or views and keep publishing separate from the optional live/operate action. The upload is one classic-script file (`pnpm run build:js` → `dist-js/canva-pieco-app.js`).
 
 UI code is in `src/app/` (TSX); the gateway, SDK and config services stay in plain JS with type declarations next to them.
 
@@ -150,3 +150,10 @@ The Content Publisher includes a **Signage (Sissi)** (`signage`) publish target 
 
 * **Configuration**: Set `VITE_SIGNAGE_URL` at build time (HTTPS URL including any path prefix, e.g. `https://host/signage`), or enter the signage URL in the app's **Settings** (saved in browser `localStorage`). The target is enabled only when a signage URL is configured.
 * **Status**: **Not yet tested against the real signage service** (pending first deployment of Sissi and spike S1 in Canva). Only unit tests with mock responses and local dev simulation have been run.
+
+
+### Sissi web views and ATEM graphics
+
+The web-view target uses the Sissi view list (`GET /api/v1/screens?kind=view`) and publishes each Canva export as a playlist entry with `alt`, optional `title`, `text` and HTTPS `link` metadata. The view's "Go live now" switch sends `enabled: true`; otherwise entries are appended disabled. This client follows the planned Sissi view contract in `docs/plans/views-web-embeds.md`; the Sissi server/API implementation is a separate prerequisite.
+
+The ATEM target reads DVE choices from Pi Gateway's `GET /api/v1/canva/animations` endpoint and attaches the selected movement to each graphic push. Older gateways without the discovery route use the known animation list as a compatibility fallback. The Canva app does not call PiGraphics directly.
