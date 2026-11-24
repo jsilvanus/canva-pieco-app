@@ -82,7 +82,7 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
         await pushCanvaGraphic({
-          title: files.length > 1 ? `${settings.name} — ${index + 1}` : settings.name,
+          title: files.length > 1 ? `${String(settings.name ?? "Graphic")} — ${index + 1}` : String(settings.name ?? "Graphic"),
           imageUrl: file.url,
           movement,
           useAt,
