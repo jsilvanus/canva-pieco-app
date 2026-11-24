@@ -19,6 +19,7 @@ export type PublishSettingsData = {
   /** Confirmed: no use date, the slides are a permanent asset. */
   permanent?: boolean;
   signage?: SignageSettings;
+  graphics?: { movement?: string };
   goLive?: GoLiveSettings;
 };
 export type GoLiveSettings = { on: boolean; feed: string; piOutput: string; projector: string; ftb: boolean };
