@@ -35,7 +35,8 @@ export function screenTargetDimensions(screen) {
 
 export function formatScreenOptionLabel(screen) {
   const { orientation, width, height } = screenTargetDimensions(screen);
-  return `${screen.name} (${orientation}, ${width} × ${height})`;
+  const rights = Array.isArray(screen?.rights) ? screen.rights.join("/") : "";
+  return `${screen.name} (${orientation}, ${width} × ${height})${rights ? ` · ${rights}` : ""}`;
 }
 
 export function findScreenById(screens, screenId) {
