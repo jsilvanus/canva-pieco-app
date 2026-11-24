@@ -52,3 +52,5 @@ export type GoLiveOptions = { itemId: string; title?: string; feed: string; piOu
 export type GoLiveList = { id: string; name: string; expiresAt: string | null; runPath: string; link: string | null; isSimulated?: boolean };
 export function buildGoLiveSteps(options: GoLiveOptions): GoLiveStep[];
 export function createGoLiveList(options: GoLiveOptions): Promise<GoLiveList>;
+
+export function listCanvaAnimations(): Promise<Array<string | { id: string; label?: string }>>;
