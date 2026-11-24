@@ -63,7 +63,7 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
 
   const signageWarnings = isSignage ? computeSignageWarnings(previews, selectedScreen) : null;
   const nonSignageMismatch =
-    !isSignage && target
+    !isSignage && target && !target.autoSize
       ? sized.filter((p) => Math.abs(p.widthPx * target.height - p.heightPx * target.width) > 0.01 * p.heightPx * target.width)
       : [];
 
