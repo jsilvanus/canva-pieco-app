@@ -24,10 +24,12 @@ export function TargetSummary({ target, screen }: { target: Target; screen?: Sig
                 defaultMessage: "Orientation and size follow the chosen screen.",
                 description: "Shown in target summary for signage before a screen is chosen",
               })
-            : intl.formatMessage(
-                { defaultMessage: "{orientation} · {width} × {height} px", description: "Orientation and resolution of a publish target" },
-                { orientation, width: dims ? dims.width : target.width, height: dims ? dims.height : target.height },
-              )}
+            : target.autoSize
+              ? intl.formatMessage({ defaultMessage: "PiProgram handles sizing for the unified projector and stream output.", description: "Explains that PiProgram handles output sizing" })
+              : intl.formatMessage(
+                  { defaultMessage: "{orientation} · {width} × {height} px", description: "Orientation and resolution of a publish target" },
+                  { orientation, width: dims ? dims.width : target.width, height: dims ? dims.height : target.height },
+                )}
         </Text>
         {target.transparent && (
           <Text size="small" tone="secondary">
