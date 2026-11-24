@@ -16,6 +16,7 @@ export const TARGETS = [
     width: 1920,
     height: 1080,
     enabled: true,
+    autoSize: true,
   },
   {
     id: "pigraphics-stream",
