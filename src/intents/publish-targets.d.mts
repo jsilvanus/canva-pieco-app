@@ -7,7 +7,7 @@ export type Target = {
   height: number;
   enabled: boolean;
   transparent?: boolean;
-  kind?: "signage";
+  kind?: "signage" | "signage-view";
   label?: string;
   dynamicSize?: boolean;
   accepts?: { image?: { format: string }; video?: { format: string } };
@@ -37,6 +37,10 @@ export function buildPushPayload(
 
 export type SignageSettings = {
   screenId: string;
+  alt?: string;
+  title?: string;
+  text?: string;
+  link?: string;
   secondsAll?: number;
   secondsByPage?: Record<string, number>;
   /** true = the slides go live at once (needs the operate right); false = added disabled. */
@@ -44,7 +48,7 @@ export type SignageSettings = {
 };
 export type TargetOptions = { signageUrl?: string };
 export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video" };
-export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number };
+export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
 export function getTargets(options?: TargetOptions): Target[];
 export function signageFallbackSize(orientation?: string): { width: number; height: number };
 export function signageKindFor(file: SignageFile): "image" | "video" | undefined;
