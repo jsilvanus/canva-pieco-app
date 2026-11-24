@@ -78,7 +78,8 @@ export function getTargets(options) {
 }
 
 export function targetById(id, options) {
-  const t = TARGETS.find((x) => x.id === id) ?? null;
+  const stableId = id === "piprogram-atem" || id === "piprogram-vertical-projector" ? "piprogram" : id;
+  const t = TARGETS.find((x) => x.id === stableId) ?? null;
   return t ? withOptions(t, options) : null;
 }
 
@@ -127,7 +128,9 @@ export function encodePublishRef(settings) {
 
 export function decodePublishRef(publishRef) {
   try {
-    return publishRef ? JSON.parse(publishRef) : {};
+    const settings = publishRef ? JSON.parse(publishRef) : {};
+    if (settings.targetId === "piprogram-atem" || settings.targetId === "piprogram-vertical-projector") settings.targetId = "piprogram";
+    return settings;
   } catch {
     return {};
   }
@@ -147,7 +150,7 @@ export function buildPushPayload(settings, pages) {
   return {
     title: settings.name.trim(),
     target: targetId,
-    ...(target ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
+    ...(target && target.id !== "piprogram" ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
     ...(from ? { useAt: from === to ? from : `${from}/${to}` } : {}),
     pages,
   };
