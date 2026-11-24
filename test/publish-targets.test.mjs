@@ -25,7 +25,6 @@ test("targets: PiProgram is unified, ATEM is PiGraphics, Sissi targets are separ
   assert.equal(TARGETS.length, 5);
 });
 
-
 test("views: publish metadata is copied onto every page and remains disabled by default", () => {
   const settings = {
     targetId: "signage-view",
