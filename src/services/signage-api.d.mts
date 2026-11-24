@@ -9,8 +9,10 @@ export type SignageScreen = {
   maxVideoSeconds: number | null;
   entryCount: number;
   playlistVersion: number;
+  kind?: "screen" | "view" | "aggregate";
+  rights?: string[];
 };
-export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number };
+export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
 export type SignagePushRequest = { screenId: string; mode?: "append" | "replace"; enabled?: boolean; title: string; pages: SignagePage[] };
 export type SignagePushAccepted = { pushId: string; taskId: string; state: "queued"; screenId: string; isSimulated?: boolean };
 export type SignagePushStatus = {
