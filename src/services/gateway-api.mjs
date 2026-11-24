@@ -334,6 +334,18 @@ export async function setProjectorPicMute({ muted, pipelineId }) {
   }
 }
 
+/** DVE transition names advertised by PiGraphics through Pi Gateway. */
+export async function listCanvaAnimations() {
+  try {
+    const data = await apiRequest("/api/v1/canva/animations", { timeoutMs: 5000 });
+    const animations = Array.isArray(data?.animations) ? data.animations : [];
+    return animations.filter((item) => typeof item === "string" || (item && typeof item.id === "string"));
+  } catch (err) {
+    if (CONFIG.isDev) return ["none", "fly-left", "fly-right", "fly-bottom", "fly-top", "zoom", "dissolve", "cut"];
+    throw err;
+  }
+}
+
 /**
  * Push transparent graphic still to ATEM Media Pool with Flying Key.
  */
