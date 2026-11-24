@@ -11,8 +11,9 @@ export type SignageScreen = {
   playlistVersion: number;
   kind?: "screen" | "view" | "aggregate";
   rights?: string[];
+  embed?: { type?: "carousel" | "single" | "gallery"; options?: { fit?: "contain" | "cover"; aspect?: string; dots?: boolean }; allowedOrigins?: string[] } | null;
 };
-export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
+export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number; alt?: string; headline?: string; caption?: string; link?: string };
 export type SignagePushRequest = { screenId: string; mode?: "append" | "replace"; enabled?: boolean; title: string; pages: SignagePage[] };
 export type SignagePushAccepted = { pushId: string; taskId: string; state: "queued"; screenId: string; isSimulated?: boolean };
 export type SignagePushStatus = {
