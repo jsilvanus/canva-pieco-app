@@ -5,6 +5,7 @@ import {
   targetById,
   validatePublishSettings,
   buildPushPayload,
+  decodePublishRef,
 } from "../src/intents/publish-targets.mjs";
 
 const good = { targetId: "piprogram", name: "Sunnuntai 15.11.", usage: { from: "2026-11-15" } };
@@ -46,5 +47,5 @@ test("views: links must be HTTPS and saved PiProgram ids migrate", () => {
   const invalid = { targetId: "signage-view", name: "x", signage: { screenId: "aikuistyo", link: "http://example.org" } };
   assert.deepEqual(validatePublishSettings(invalid, url).errors, ["link"]);
   assert.equal(JSON.parse(encodePublishRef({ targetId: "piprogram-atem" })).targetId, "piprogram-atem");
-  assert.equal((await import("../src/intents/publish-targets.mjs")).decodePublishRef(JSON.stringify({ targetId: "piprogram-atem" })).targetId, "piprogram");
+  assert.equal(decodePublishRef(JSON.stringify({ targetId: "piprogram-atem" })).targetId, "piprogram");
 });
