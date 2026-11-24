@@ -158,8 +158,8 @@ test("views: publish metadata is copied onto every page and remains disabled by 
   ]);
   assert.equal(payload.enabled, false);
   assert.equal(payload.pages[0].alt, "Aikuistyö");
-  assert.equal(payload.pages[0].title, "Tapahtumat");
-  assert.equal(payload.pages[1].text, "Tule mukaan");
+  assert.equal(payload.pages[0].headline, "Tapahtumat");
+  assert.equal(payload.pages[1].caption, "Tule mukaan");
   assert.equal(payload.pages[1].link, "https://example.org/events");
 });
 
