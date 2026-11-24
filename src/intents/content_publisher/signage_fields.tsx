@@ -51,7 +51,6 @@ export function SignageFields({
       : undefined;
 
   const secondsAllInvalid = signage.secondsAll !== undefined && !isValidSecondsValue(signage.secondsAll);
-  const canWrite = !Array.isArray(selectedScreen?.rights) || selectedScreen.rights.includes("write");
   const canOperate = !Array.isArray(selectedScreen?.rights) || selectedScreen.rights.includes("operate");
 
   return (
