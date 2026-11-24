@@ -19,7 +19,7 @@ const DRAFT_CHANNEL = "canva-pieco-app.signage-draft";
  */
 
 export function isSignageTarget(target) {
-  return target?.kind === "signage";
+  return target?.kind === "signage" || target?.kind === "signage-view";
 }
 
 export function screenTargetDimensions(screen) {
