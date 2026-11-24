@@ -212,8 +212,8 @@ export function buildSignagePushPayload(settings, files) {
         url: f.url,
         ...(settings.targetId === "signage-view" ? {
           alt: String(s.alt || f.name || settings.name || `Page ${pageNumber}`).trim(),
-          ...(s.title ? { title: s.title } : {}),
-          ...(s.text ? { text: s.text } : {}),
+          ...(s.title ? { headline: s.title } : {}),
+          ...(s.text ? { caption: s.text } : {}),
           ...(s.link ? { link: s.link } : {}),
         } : {}),
         ...(kind !== "video" && seconds !== undefined && seconds !== null ? { seconds } : {}),
