@@ -242,6 +242,7 @@ export async function publishSignageContent(
       url: file.url,
       pageNumber: index + 1,
       kind: fileKindHint(file),
+      name: file.name,
     }));
   if (files.length === 0) {
     return { status: "app_error", message: "No slides were exported from Canva." };
