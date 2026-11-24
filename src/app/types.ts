@@ -9,6 +9,9 @@ export type PanelProps = {
   showProgress: (percent: number, label: string) => void;
   clearProgress: () => void;
   busy: boolean;
+  /** Rights of the signed-in person. Only hide or disable controls; the gateway checks every call. */
+  canWrite: boolean;
+  canOperate: boolean;
   /** Whether this mode is the one shown; only the shown mode handles keyboard shortcuts. */
   active: boolean;
 };

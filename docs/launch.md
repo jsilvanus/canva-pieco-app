@@ -19,6 +19,15 @@ The app only does something with a Pi Gateway that the browser in Canva can reac
 - Settings (link under the title): gateway address (https only, or http on localhost) and access key, kept in this browser's localStorage. Build-time `VITE_GATEWAY_URL` / `VITE_GATEWAY_API_KEY` are only defaults.
 - **Do not put a real key in a published bundle.** Anything built into the bundle can be read by everybody who can open the app. Build without `VITE_GATEWAY_API_KEY` and let each operator enter the key in Settings.
 
+## Sign in with Tunnus (built in the app, off by default, not run in Canva)
+
+Plan: [Canva app sign-in with Tunnus](https://claude.ai/artifact/BFkuQeWS4e2hQqkwQabWrJ). With `VITE_TUNNUS_SIGN_IN=1` the panel shows "Sign in with the church account". Canva runs the OAuth flow on its own servers and keeps the tokens; the app only calls `auth.initOauth({ provider })`, `requestAuthorization` (scopes `openid profile email groups offline_access`, `prompt=consent`) and `getAccessToken`, and sends that Tunnus token as the Bearer token to the gateway and to Sissi. Signed out, the app keeps using the Canva user token (team scope), then the Settings key, exactly as before. No client secret is in the app.
+
+- **Rights:** the app asks `GET /api/v1/canva/session` and gets `{ name, rights }`. `canva:write` allows publishing (push, playlists, signage content); `canva:operate` allows Go live, the playback and graphics controls and projector routing. They are separate. Without a right the control is disabled or hidden; the gateway still checks every call. A gateway without the session route (404) or an unreachable one gates nothing in the app.
+- **Portal setup (portal owner):** Auth providers, add provider with identifier `tunnus` (or `VITE_AUTH_PROVIDER`), the client id and secret of the Tunnus `canva` client, credential transfer mode Headers, PKCE on, Tunnus's authorize and token URLs (from its discovery document), and the portal's Redirect URL copied into the Tunnus client. The client secret is only ever pasted into the portal and the infra secrets, never into this repository or the bundle.
+- **Needs before it can be turned on:** the Tunnus `canva` client (infra repo), pigateway accepting Tunnus tokens and answering `/api/v1/canva/session` (pigateway thread), and Sissi checking `sissi:*` rights. None of these exist yet, so leave `VITE_TUNNUS_SIGN_IN` empty until they do.
+- **Open until a spike in real Canva:** whether the Tunnus access token carries `groups` and a two-name `aud`, token lifetime and refresh, whether a team-only app can use OAuth, and whether the popup works with Tunnus's headers (Cross-Origin-Opener-Policy). The publish dialog (Content Publisher) does not show a sign-in button; it uses the sign-in made in the design panel.
+
 ## For the portal owner (not done)
 
 1. Create the app in the [Developer Portal](https://www.canva.com/developers/) (type: Canva App), set the app name and icon.

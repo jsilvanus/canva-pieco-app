@@ -1,4 +1,5 @@
 import { CONFIG } from "../config.mjs";
+import { getBearerToken } from "./auth.mjs";
 
 /**
  * Custom error class for Pi Gateway API errors.
@@ -23,21 +24,8 @@ export function resetFetchImpl() {
 }
 
 /**
- * The Canva user token of the person using the app (inside Canva only). The gateway checks it and
- * allows the user's team, so no shared key is needed in Canva. Outside Canva there is none.
- */
-async function canvaUserToken() {
-  try {
-    const { auth } = await import("@canva/user");
-    const token = await auth.getCanvaUserToken();
-    return typeof token === "string" && token ? token : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Standard headers for Pi Gateway requests: the Canva user token when there is one, otherwise the
+ * Standard headers for Pi Gateway requests: the Tunnus sign-in token when signed in, else the Canva user
+ * token when there is one, otherwise the
  * key from Settings or the build (outside Canva, e.g. a browser test).
  */
 async function getHeaders() {
@@ -45,7 +33,7 @@ async function getHeaders() {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  const userToken = await canvaUserToken();
+  const userToken = await getBearerToken();
   if (userToken) {
     headers["Authorization"] = `Bearer ${userToken}`;
   } else if (CONFIG.gatewayApiKey) {

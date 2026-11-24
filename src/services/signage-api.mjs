@@ -1,4 +1,5 @@
 import { CONFIG } from "../config.mjs";
+import { getBearerToken } from "./auth.mjs";
 
 /**
  * Client for the Sissi signage service (contract: simple-smart-signage openapi/sissi-v1.yaml).
@@ -87,17 +88,6 @@ export function resetSignageFetchImpl() {
   customFetchImpl = null;
 }
 
-/** The Canva user token (inside Canva only). The service checks it and allows the user's team. */
-async function canvaUserToken() {
-  try {
-    const { auth } = await import("@canva/user");
-    const token = await auth.getCanvaUserToken();
-    return typeof token === "string" && token ? token : null;
-  } catch {
-    return null;
-  }
-}
-
 function resolveBaseUrl(options) {
   const raw = options.baseUrl ?? CONFIG.signageUrl ?? "";
   return String(raw).trim().replace(/\/+$/, "");
@@ -114,7 +104,7 @@ async function getHeaders(options, token) {
 async function apiRequest(path, options = {}) {
   const base = resolveBaseUrl(options);
   const url = `${base}/api/v1${path}`;
-  const token = await (options.getToken || canvaUserToken)();
+  const token = await (options.getToken || getBearerToken)();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 10000);
   try {
@@ -163,7 +153,7 @@ async function useMock(options) {
   if (options.mock === true) return true;
   if (options.mock === false) return false;
   if (!CONFIG.isDev || resolveBaseUrl(options)) return false;
-  return !(await (options.getToken || canvaUserToken)());
+  return !(await (options.getToken || getBearerToken)());
 }
 
 function mockStatus(pushId, now) {

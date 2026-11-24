@@ -48,7 +48,7 @@ const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "")
 const INITIAL_SETUP: Setup = { pipelineId: "pipgm1", piOutput: "pi1", projector: "left", ftb: false };
 
 /** Slides: 1. push the design to church storage, 2. play options and Go live, 3. drive the slides live. */
-export function SlidesView({ notify, showProgress, clearProgress, busy, active, onPipelineChange }: PanelProps & { onPipelineChange: (pipelineId: string) => void }) {
+export function SlidesView({ notify, showProgress, clearProgress, busy, active, canWrite, canOperate, onPipelineChange }: PanelProps & { onPipelineChange: (pipelineId: string) => void }) {
   const intl = useIntl();
   const [step, setStep] = useState<Step>("push");
   const [designName, setDesignName] = useState("");
@@ -158,7 +158,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
   };
 
   // Setup needs pushed slides and Live needs a set-up pipeline; Tab has no disabled state.
-  const available: Record<Step, boolean> = { push: true, setup: Boolean(staged), live: Boolean(live) };
+  const available: Record<Step, boolean> = { push: true, setup: Boolean(staged) && canOperate, live: Boolean(live) && canOperate };
   const tabLabel = {
     push: intl.formatMessage({ defaultMessage: "1. Push", description: "Tab for sending the design to the church" }),
     setup: intl.formatMessage({ defaultMessage: "2. Play", description: "Tab for the play options and Go live" }),
@@ -176,7 +176,7 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       </Tabs>
 
       {step === "push" && (
-        <PushStep designName={designName} onDesignNameChange={setDesignName} serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} askPermanent={askPermanent} onCancelPermanent={() => setAskPermanent(false)} onPush={() => handlePush(false)} onConfirmPermanent={() => handlePush(true)} onNext={() => setStep("setup")} />
+        <PushStep designName={designName} onDesignNameChange={setDesignName} serviceDate={serviceDate} onServiceDateChange={setServiceDate} staged={staged} busy={busy} canWrite={canWrite} canOperate={canOperate} askPermanent={askPermanent} onCancelPermanent={() => setAskPermanent(false)} onPush={() => handlePush(false)} onConfirmPermanent={() => handlePush(true)} onNext={() => setStep("setup")} />
       )}
       {step === "setup" && staged && <SetupStep staged={staged} setup={setup} onChange={setSetup} busy={settingUp} onApply={handleGoLive} />}
       {step === "live" && live && <LiveStep live={live} active={active} onChange={setLive} notify={notify} onReconfigure={() => setStep("setup")} golive={golive} />}
@@ -191,6 +191,8 @@ function PushStep({
   onServiceDateChange,
   staged,
   busy,
+  canWrite,
+  canOperate,
   onPush,
   onNext,
   askPermanent,
@@ -203,6 +205,8 @@ function PushStep({
   onServiceDateChange: (value: string) => void;
   staged: Staged | null;
   busy: boolean;
+  canWrite: boolean;
+  canOperate: boolean;
   onPush: () => void;
   onNext: () => void;
   askPermanent: boolean;
@@ -244,7 +248,7 @@ function PushStep({
               description: "Confirmation shown when a push has no service date",
             })}
           </Text>
-          <Button variant="primary" onClick={onConfirmPermanent} loading={busy} disabled={busy} stretch>
+          <Button variant="primary" onClick={onConfirmPermanent} loading={busy} disabled={busy || !canWrite} stretch>
             {intl.formatMessage({ defaultMessage: "Yes, permanent asset", description: "Confirms a push without a service date" })}
           </Button>
           <Button variant="secondary" onClick={onCancelPermanent} disabled={busy} stretch>
@@ -252,7 +256,7 @@ function PushStep({
           </Button>
         </Rows>
       ) : (
-        <Button variant="primary" onClick={onPush} loading={busy} disabled={busy} stretch>
+        <Button variant="primary" onClick={onPush} loading={busy} disabled={busy || !canWrite} stretch>
           {pushLabel}
         </Button>
       )}
@@ -268,7 +272,7 @@ function PushStep({
             {intl.formatMessage({ defaultMessage: "{count, plural, one {# slide} other {# slides}} in church storage", description: "Number of slides already pushed" }, { count: staged.pages.length })}
           </Text>
           <Thumbnails pages={staged.pages} />
-          <Button variant="secondary" onClick={onNext} stretch>
+          <Button variant="secondary" onClick={onNext} disabled={!canOperate} stretch>
             {intl.formatMessage({ defaultMessage: "Continue to play options", description: "Moves to the play options step" })}
           </Button>
         </Rows>

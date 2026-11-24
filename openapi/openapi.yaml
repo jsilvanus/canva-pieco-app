@@ -223,6 +223,33 @@ paths:
                   ftb: { type: boolean, example: false }
                   picMute: { type: boolean, example: false }
 
+  /api/v1/canva/session:
+    get:
+      summary: Who the caller is and what they may do
+      description: |
+        Answers for a Tunnus access token (the person signed in through Canva's OAuth). Rights are written
+        `<module>:<level>`; the app needs `canva:write` to publish content and `canva:operate` to go live,
+        use the playback controls and route projectors. The app only hides or disables controls from this;
+        every route checks the right again. A gateway without this route answers 404 and the app then gates nothing.
+        Not built in the gateway yet (planned, see docs/launch.md).
+      operationId: getCanvaSession
+      responses:
+        "200":
+          description: The signed-in person and their rights.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string, example: "Test Person" }
+                  rights:
+                    type: array
+                    items: { type: string }
+                    example: ["canva:write", "canva:operate"]
+        "401":
+          description: Missing, invalid or expired token.
+        "403":
+          description: Signed in, but the account has no rights for this app.
   /api/v1/graphics/canva/push:
     post:
       summary: Broadcast Graphic Push with ATEM Flying Key
