@@ -341,7 +341,10 @@ export async function listCanvaAnimations() {
     const animations = Array.isArray(data?.animations) ? data.animations : [];
     return animations.filter((item) => typeof item === "string" || (item && typeof item.id === "string"));
   } catch (err) {
-    if (CONFIG.isDev) return ["none", "fly-left", "fly-right", "fly-bottom", "fly-top", "zoom", "dissolve", "cut"];
+    // Older gateways do not expose discovery yet; the known ATEM DVE set remains a safe fallback.
+    if (CONFIG.isDev || (err instanceof GatewayError && err.status === 404)) {
+      return ["none", "fly-left", "fly-right", "fly-bottom", "fly-top", "zoom", "dissolve", "cut"];
+    }
     throw err;
   }
 }
