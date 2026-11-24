@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { listScreens, pushSignage, getSignagePush, waitForSignagePush, SignageError } from "../src/services/signage-api.mjs";
+import { listScreens, listViews, pushSignage, getSignagePush, waitForSignagePush, SignageError } from "../src/services/signage-api.mjs";
 
 const BASE = "https://sissi.example.org/signage/";
 
@@ -36,6 +36,13 @@ test("listScreens: 200 returns screens, appends /api/v1 and sends the Canva toke
   assert.deepEqual(await listScreens(opts(f)), [screen]);
   assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens");
   assert.equal(f.calls[0].init.headers.Authorization, "Bearer canva-token");
+});
+
+test("listViews: requests kind=view and returns only the view collection", async () => {
+  const view = { ...screen, id: "aikuistyo", name: "Aikuistyö", kind: "view", rights: ["write", "operate"] };
+  const f = fake(json(200, { screens: [view] }));
+  assert.deepEqual(await listViews(opts(f)), [view]);
+  assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens?kind=view");
 });
 
 test("push key is used only when there is no Canva token", async () => {
