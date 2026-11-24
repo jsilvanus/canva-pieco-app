@@ -3,7 +3,7 @@ import { useIntl } from "react-intl";
 import { Alert, Box, FormField, Grid, ImageCard, NumberInput, Placeholder, Rows, Text } from "@canva/app-ui-kit";
 import type { OutputType, Preview, PreviewMedia, RenderPreviewUiRequest } from "@canva/intents/content";
 import { CONFIG } from "../../config.mjs";
-import { listScreens } from "../../services/signage-api.mjs";
+import { listScreens, listViews } from "../../services/signage-api.mjs";
 import type { SignageScreen } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodeSignageSettings, parseSignageSettings, targetById } from "../publish-targets.mjs";
 import {
@@ -36,11 +36,12 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
 
   const target = targetById(state.outputType?.id, { signageUrl: CONFIG.signageUrl });
   const isSignage = isSignageTarget(target);
+  const isView = target?.kind === "signage-view";
 
   useEffect(() => {
     if (!isSignage) return;
     let cancelled = false;
-    void listScreens()
+    void (isView ? listViews() : listScreens())
       .then((list) => {
         if (!cancelled) setScreens(list);
       })
@@ -50,7 +51,7 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
     return () => {
       cancelled = true;
     };
-  }, [isSignage]);
+  }, [isSignage, isView]);
 
   const settings = decodePublishRef(state.publishRef);
   const signage = parseSignageSettings(settings.signage ? encodeSignageSettings(settings.signage) : undefined);
