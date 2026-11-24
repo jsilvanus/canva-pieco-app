@@ -43,6 +43,7 @@ export function pushCanvaGraphic(args: {
   autoHideMs?: number;
   keyer?: string;
   slot?: number;
+  useAt?: string | string[] | null;
 }): Promise<unknown>;
 export function setCanvaGraphicOffAir(args?: { keyer?: string; index?: number }): Promise<unknown>;
 export function getGatewayStatus(pipelineId?: string): Promise<{ isSimulated?: boolean }>;
