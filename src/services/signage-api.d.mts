@@ -60,3 +60,5 @@ export function pushSignage(request: SignagePushRequest, options?: SignageReques
 export function getSignagePush(pushId: string, options?: SignageRequestOptions): Promise<SignagePushStatus>;
 export function describeSignagePush(status: SignagePushStatus): string;
 export function waitForSignagePush(pushId: string, options?: SignageWaitOptions): Promise<SignagePushStatus>;
+
+export function listViews(options?: SignageRequestOptions): Promise<SignageScreen[]>;
