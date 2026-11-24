@@ -18,7 +18,7 @@ type Props = {
 export function ViewFields({ value, views, errors, showErrors, onRetry, onChange }: Props) {
   const intl = useIntl();
   const selected: SignageScreen | null = findScreenById(views.screens, value.screenId);
-  const options = views.screens.map((view) => ({
+  const options = views.screens.filter((view) => !Array.isArray(view.rights) || view.rights.includes("write")).map((view) => ({
     value: view.id,
     label: formatScreenOptionLabel(view),
   }));
