@@ -71,7 +71,7 @@ test("pushSignage: 202 body, image seconds sent, video seconds dropped", async (
   const accepted = { pushId: "push_1", taskId: "push_1", state: "queued", screenId: "lobby" };
   const f = fake(json(202, accepted));
   const res = await pushSignage(
-    { screenId: "lobby", mode: "append", enabled: true, title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
+    { screenId: "lobby", mode: "append", enabled: true, title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8, alt: "Welcome", headline: "Heading", caption: "Description", link: "https://example.org" }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
     opts(f),
   );
   assert.deepEqual(res, accepted);
@@ -81,7 +81,7 @@ test("pushSignage: 202 body, image seconds sent, video seconds dropped", async (
     mode: "append",
     enabled: true,
     title: "Konsertti",
-    pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video" }, { pageNumber: 3, url: "https://c" }],
+    pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8, alt: "Welcome", headline: "Heading", caption: "Description", link: "https://example.org" }, { pageNumber: 2, url: "https://b", kind: "video" }, { pageNumber: 3, url: "https://c" }],
   });
 });
 
