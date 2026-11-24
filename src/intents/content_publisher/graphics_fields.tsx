@@ -8,7 +8,7 @@ type Props = { value: string; onChange: (movement: string) => void };
 /** DVE choices are discovered through Pi Gateway; the plugin never calls PiGraphics directly. */
 export function GraphicsFields({ value, onChange }: Props) {
   const intl = useIntl();
-  const [animations, setAnimations] = useState<Array<string | { id: string; label?: string }>>([]);
+  const [animations, setAnimations] = useState<(string | { id: string; label?: string })[]>([]);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
