@@ -357,6 +357,7 @@ export async function pushCanvaGraphic({
   autoHideMs = 7000,
   keyer = "usk",
   slot = 7,
+  useAt = null,
 }) {
   try {
     return await apiRequest("/api/v1/graphics/canva/push", {
@@ -369,6 +370,7 @@ export async function pushCanvaGraphic({
         autoHideMs,
         keyer,
         slot,
+        ...(useAt ? { useAt } : {}),
       }),
     });
   } catch (err) {
