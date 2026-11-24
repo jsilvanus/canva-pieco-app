@@ -11,7 +11,7 @@
 export const TARGETS = [
   {
     id: "piprogram",
-    displayName: "Keskuskirkko (PiProgram)",
+    displayName: "Keskuskirkko (piProgram)",
     orientation: "landscape",
     width: 1920,
     height: 1080,
@@ -52,7 +52,7 @@ export const TARGETS = [
   },
   {
     id: "saarnavideo",
-    displayName: "Saarnavideo (later)",
+    displayName: "Saarnavideo [later]",
     orientation: "landscape",
     width: 1920,
     height: 1080,
@@ -210,7 +210,7 @@ export function buildSignagePushPayload(settings, files) {
         ...(kind ? { kind } : {}),
         url: f.url,
         ...(settings.targetId === "signage-view" ? {
-          alt: String(s.alt || settings.name || `Page ${pageNumber}`).trim(),
+          alt: String(s.alt || f.name || settings.name || `Page ${pageNumber}`).trim(),
           ...(s.title ? { title: s.title } : {}),
           ...(s.text ? { text: s.text } : {}),
           ...(s.link ? { link: s.link } : {}),
