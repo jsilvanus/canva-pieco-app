@@ -10,6 +10,7 @@ export type Target = {
   kind?: "signage" | "signage-view";
   label?: string;
   dynamicSize?: boolean;
+  autoSize?: boolean;
   accepts?: { image?: { format: string }; video?: { format: string } };
 };
 export type PublishSettingsData = {
