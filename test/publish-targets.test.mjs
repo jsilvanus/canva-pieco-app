@@ -6,6 +6,7 @@ import {
   validatePublishSettings,
   buildPushPayload,
   decodePublishRef,
+  encodePublishRef,
 } from "../src/intents/publish-targets.mjs";
 
 const good = { targetId: "piprogram", name: "Sunnuntai 15.11.", usage: { from: "2026-11-15" } };
