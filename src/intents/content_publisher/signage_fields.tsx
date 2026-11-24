@@ -26,7 +26,7 @@ export function SignageFields({
   const intl = useIntl();
   const selectedScreen: SignageScreen | null = findScreenById(screenList.screens, signage.screenId);
 
-  const screenOptions = screenList.screens.map((screen) => ({
+  const screenOptions = screenList.screens.filter((screen) => !Array.isArray(screen.rights) || screen.rights.includes("write")).map((screen) => ({
     value: screen.id,
     label: formatScreenOptionLabel(screen),
   }));
@@ -51,6 +51,8 @@ export function SignageFields({
       : undefined;
 
   const secondsAllInvalid = signage.secondsAll !== undefined && !isValidSecondsValue(signage.secondsAll);
+  const canWrite = !Array.isArray(selectedScreen?.rights) || selectedScreen.rights.includes("write");
+  const canOperate = !Array.isArray(selectedScreen?.rights) || selectedScreen.rights.includes("operate");
 
   return (
     <Rows spacing="2u">
@@ -93,11 +95,11 @@ export function SignageFields({
 
       <Checkbox
         label={intl.formatMessage({ defaultMessage: "Enable now", description: "Puts the published slides live on the signage screen at once" })}
-        description={intl.formatMessage({
-          defaultMessage: "Off: the slides are added to the playlist disabled and an operator turns them on. On: they play on the screen right away.",
-          description: "Explains the enable now switch for signage",
-        })}
+        description={canOperate
+          ? intl.formatMessage({ defaultMessage: "Off: add disabled. On: put the slides on screen right away.", description: "Explains the signage live switch" })
+          : intl.formatMessage({ defaultMessage: "You can publish to this screen, but need the operate right to put content live.", description: "Explains why signage live activation is unavailable" })}
         checked={signage.enableNow === true}
+        disabled={!canOperate}
         onChange={(_, checked) => onChange({ enableNow: checked })}
       />
 
