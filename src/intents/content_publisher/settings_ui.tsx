@@ -5,10 +5,12 @@ import type { DateObj } from "@canva/app-ui-kit";
 import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
 import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
-import { listScreens } from "../../services/signage-api.mjs";
+import { listScreens, listViews } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
 import { SignageFields } from "./signage_fields";
+import { ViewFields } from "./view_fields";
+import { GraphicsFields } from "./graphics_fields";
 import { GoLiveFields } from "./go_live_fields";
 import {
   findScreenById,
@@ -46,16 +48,18 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   const signageUrl = CONFIG.signageUrl;
   const target = targetById(settings.targetId, { signageUrl });
   const isSignage = isSignageTarget(target);
+  const isView = target?.kind === "signage-view";
+  const isGraphics = target?.id === "pigraphics-stream";
 
   const loadScreens = useCallback(async () => {
     setScreenList(screenListInitialState());
     try {
-      const screens = await listScreens();
+      const screens = isView ? await listViews() : await listScreens();
       setScreenList(screenListLoaded(screens));
     } catch (err) {
       setScreenList(screenListFailed(err));
     }
-  }, []);
+  }, [isView]);
 
   useEffect(() => {
     if (isSignage) void loadScreens();
@@ -135,7 +139,9 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
             tone="info"
             text={
               isSignage
-                ? intl.formatMessage({ defaultMessage: "Signage (Sissi)", description: "Badge naming the signage service" })
+                ? (isView
+                  ? intl.formatMessage({ defaultMessage: "Websites (Sissi)", description: "Badge naming the Sissi web-view target" })
+                  : intl.formatMessage({ defaultMessage: "Info screens (Sissi)", description: "Badge naming the Sissi physical-screen target" }))
                 : intl.formatMessage({ defaultMessage: "Pi gateway", description: "Badge naming where the slides go" })
             }
           />
@@ -163,7 +169,16 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
         </Alert>
       )}
 
-      {isSignage ? (
+      {isView ? (
+        <ViewFields
+          value={settings.signage ?? { screenId: "" }}
+          views={screenList}
+          errors={errors}
+          showErrors={showErrors}
+          onRetry={() => void loadScreens()}
+          onChange={updateSignage}
+        />
+      ) : isSignage ? (
         <SignageFields
           signage={settings.signage ?? {}}
           screenList={screenList}
@@ -196,6 +211,8 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           </Column>
         </Columns>
       )}
+
+      {isGraphics && <GraphicsFields value={settings.graphics?.movement ?? "none"} onChange={(movement) => update({ graphics: { movement } })} />}
 
       {!isSignage && <GoLiveFields value={settings.goLive} onChange={(goLive) => update({ goLive })} />}
 

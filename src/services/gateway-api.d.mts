@@ -43,6 +43,7 @@ export function pushCanvaGraphic(args: {
   autoHideMs?: number;
   keyer?: string;
   slot?: number;
+  useAt?: string | string[] | null;
 }): Promise<unknown>;
 export function setCanvaGraphicOffAir(args?: { keyer?: string; index?: number }): Promise<unknown>;
 export function getGatewayStatus(pipelineId?: string): Promise<{ isSimulated?: boolean }>;
@@ -52,3 +53,5 @@ export type GoLiveOptions = { itemId: string; title?: string; feed: string; piOu
 export type GoLiveList = { id: string; name: string; expiresAt: string | null; runPath: string; link: string | null; isSimulated?: boolean };
 export function buildGoLiveSteps(options: GoLiveOptions): GoLiveStep[];
 export function createGoLiveList(options: GoLiveOptions): Promise<GoLiveList>;
+
+export function listCanvaAnimations(): Promise<Array<string | { id: string; label?: string }>>;

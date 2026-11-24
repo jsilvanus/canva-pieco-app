@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { listScreens, pushSignage, getSignagePush, waitForSignagePush, SignageError } from "../src/services/signage-api.mjs";
+import { listScreens, listViews, pushSignage, getSignagePush, waitForSignagePush, SignageError } from "../src/services/signage-api.mjs";
 
 const BASE = "https://sissi.example.org/signage/";
 
@@ -38,6 +38,13 @@ test("listScreens: 200 returns screens, appends /api/v1 and sends the Canva toke
   assert.equal(f.calls[0].init.headers.Authorization, "Bearer canva-token");
 });
 
+test("listViews: requests kind=view and returns only the view collection", async () => {
+  const view = { ...screen, id: "aikuistyo", name: "Aikuistyö", kind: "view", rights: ["write", "operate"] };
+  const f = fake(json(200, { screens: [view] }));
+  assert.deepEqual(await listViews(opts(f)), [view]);
+  assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens?kind=view");
+});
+
 test("push key is used only when there is no Canva token", async () => {
   const f = fake(json(200, { screens: [] }));
   await listScreens(opts(f, { getToken: async () => null, pushKey: "key1" }));
@@ -64,7 +71,7 @@ test("pushSignage: 202 body, image seconds sent, video seconds dropped", async (
   const accepted = { pushId: "push_1", taskId: "push_1", state: "queued", screenId: "lobby" };
   const f = fake(json(202, accepted));
   const res = await pushSignage(
-    { screenId: "lobby", mode: "append", enabled: true, title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
+    { screenId: "lobby", mode: "append", enabled: true, title: "Konsertti", pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8, alt: "Welcome", headline: "Heading", caption: "Description", link: "https://example.org" }, { pageNumber: 2, url: "https://b", kind: "video", seconds: 5 }, { pageNumber: 3, url: "https://c" }] },
     opts(f),
   );
   assert.deepEqual(res, accepted);
@@ -74,7 +81,7 @@ test("pushSignage: 202 body, image seconds sent, video seconds dropped", async (
     mode: "append",
     enabled: true,
     title: "Konsertti",
-    pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8 }, { pageNumber: 2, url: "https://b", kind: "video" }, { pageNumber: 3, url: "https://c" }],
+    pages: [{ pageNumber: 1, url: "https://a", kind: "image", seconds: 8, alt: "Welcome", headline: "Heading", caption: "Description", link: "https://example.org" }, { pageNumber: 2, url: "https://b", kind: "video" }, { pageNumber: 3, url: "https://c" }],
   });
 });
 

@@ -5,19 +5,24 @@ import {
   targetById,
   validatePublishSettings,
   buildPushPayload,
+  decodePublishRef,
+  encodePublishRef,
 } from "../src/intents/publish-targets.mjs";
 
-const good = { targetId: "piprogram-atem", name: "Sunnuntai 15.11.", usage: { from: "2026-11-15" } };
+const good = { targetId: "piprogram", name: "Sunnuntai 15.11.", usage: { from: "2026-11-15" } };
 
-test("targets: PiGraphics is landscape 1080p only; vertical is the Epson 10:16 (1200x1920); Saarnavideo is disabled", () => {
+test("targets: PiProgram is unified, ATEM is PiGraphics, Sissi targets are separate, Saarnavideo is later", () => {
+  assert.equal(targetById("piprogram").orientation, "landscape");
+  assert.equal(targetById("piprogram-atem").id, "piprogram");
+  assert.equal(targetById("piprogram-vertical-projector").id, "piprogram");
   const graphics = targetById("pigraphics-stream");
   assert.equal(graphics.orientation, "landscape");
   assert.equal([graphics.width, graphics.height].join("x"), "1920x1080");
-  const vertical = targetById("piprogram-vertical-projector");
-  assert.equal([vertical.width, vertical.height].join("x"), "1200x1920");
-  assert.equal(vertical.width / vertical.height, 10 / 16);
+  assert.equal(graphics.transparent, true);
+  assert.equal(targetById("signage").kind, "signage");
+  assert.equal(targetById("signage-view").kind, "signage-view");
   assert.equal(targetById("saarnavideo").enabled, false);
-  assert.ok(TARGETS.length >= 4);
+  assert.equal(TARGETS.length, 5);
 });
 
 test("settings: a name and one date are enough", () => {
@@ -45,13 +50,12 @@ test("push payload: single date becomes useAt, range becomes start/end, target i
   const pages = [{ url: "u", pageNumber: 1, name: "Page 1" }];
   assert.deepEqual(buildPushPayload(good, pages), {
     title: "Sunnuntai 15.11.",
-    target: "piprogram-atem",
-    orientation: "landscape",
+    target: "piprogram",
     useAt: "2026-11-15",
     pages,
   });
   assert.equal("useAt" in buildPushPayload({ ...good, usage: {}, permanent: true }, pages), false);
-  assert.equal(buildPushPayload({ ...good, targetId: "piprogram-vertical-projector" }, pages).orientation, "portrait");
+  assert.equal("orientation" in buildPushPayload({ ...good, targetId: "piprogram-vertical-projector" }, pages), false);
   const range = { ...good, usage: { from: "2026-11-15", to: "2026-11-17" } };
   assert.equal(buildPushPayload(range, pages).useAt, "2026-11-15/2026-11-17");
 });
@@ -74,8 +78,9 @@ test("signage: disabled without signageUrl, enabled with it; other targets uncha
   assert.equal(targetById("signage", url).dynamicSize, true);
   assert.ok(validatePublishSettings(sig).errors.includes("target_disabled"));
   assert.equal(getTargets(url).find((t) => t.id === "signage").enabled, true);
-  assert.equal(getTargets().filter((t) => t.enabled).length, 3);
-  assert.equal(targetById("piprogram-atem").transparent, true);
+  assert.equal(getTargets().filter((t) => t.enabled).length, 2);
+  assert.equal(targetById("piprogram").transparent, undefined);
+  assert.equal(targetById("pigraphics-stream").transparent, true);
   assert.equal(targetById("signage").transparent, undefined);
   assert.deepEqual(signageFallbackSize("landscape"), { width: 1920, height: 1080 });
   assert.deepEqual(signageFallbackSize("portrait"), { width: 1080, height: 1920 });
@@ -137,4 +142,30 @@ test("signage: settings round trip", () => {
   assert.deepEqual(parseSignageSettings("nope"), { screenId: "", secondsByPage: {}, enableNow: false });
   // An old publishRef that asked for replace does not put anything live.
   assert.equal(parseSignageSettings({ screenId: "s1", mode: "replace", confirmReplace: true }).enableNow, false);
+});
+
+
+test("views: publish metadata is copied onto every page and remains disabled by default", () => {
+  const settings = {
+    targetId: "signage-view",
+    name: "Aikuistyö",
+    signage: { screenId: "aikuistyo", title: "Tapahtumat", text: "Tule mukaan", link: "https://example.org/events" },
+  };
+  assert.deepEqual(validatePublishSettings(settings, url), { validityState: "valid", errors: [] });
+  const payload = buildSignagePushPayload(settings, [
+    { url: "https://cdn.example.org/one.png", pageNumber: 1 },
+    { url: "https://cdn.example.org/two.png", pageNumber: 2 },
+  ]);
+  assert.equal(payload.enabled, false);
+  assert.equal(payload.pages[0].alt, "Aikuistyö");
+  assert.equal(payload.pages[0].headline, "Tapahtumat");
+  assert.equal(payload.pages[1].caption, "Tule mukaan");
+  assert.equal(payload.pages[1].link, "https://example.org/events");
+});
+
+test("views: links must be HTTPS and saved PiProgram ids migrate", () => {
+  const invalid = { targetId: "signage-view", name: "x", signage: { screenId: "aikuistyo", link: "http://example.org" } };
+  assert.deepEqual(validatePublishSettings(invalid, url).errors, ["link"]);
+  assert.equal(JSON.parse(encodePublishRef({ targetId: "piprogram-atem" })).targetId, "piprogram-atem");
+  assert.equal(decodePublishRef(JSON.stringify({ targetId: "piprogram-atem" })).targetId, "piprogram");
 });

@@ -11,7 +11,7 @@ import type {
   RenderSettingsUiRequest,
 } from "@canva/intents/content";
 import { CONFIG } from "../../config.mjs";
-import { createGoLiveList, pushContent, waitForTask } from "../../services/gateway-api.mjs";
+import { createGoLiveList, pushContent, waitForTask, pushCanvaGraphic } from "../../services/gateway-api.mjs";
 import { renderInCanva } from "../../app/mount";
 import { getTargets, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
 import type { Target } from "../publish-targets.mjs";
@@ -48,7 +48,7 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
 }
 
 async function getPublishConfiguration(): Promise<GetPublishConfigurationResponse> {
-  const targets = getTargets({ signageUrl: CONFIG.signageUrl }).filter((t) => t.kind !== "signage" || t.enabled);
+  const targets = getTargets({ signageUrl: CONFIG.signageUrl }).filter((t) => (t.kind !== "signage" && t.kind !== "signage-view") || t.enabled);
   return { status: "completed", outputTypes: targets.map(outputTypeFor) };
 }
 
@@ -64,6 +64,35 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
   const target = targetById(outputType.id, { signageUrl: CONFIG.signageUrl });
   if (isSignageTarget(target)) {
     return publishSignageContent({ outputMedia, outputType, publishRef });
+  }
+
+  if (target?.id === "pigraphics-stream") {
+    const settings = { ...decodePublishRef(publishRef), targetId: outputType.id };
+    const check = validatePublishSettings(settings);
+    if (check.validityState !== "valid") {
+      return { status: "app_error", message: `Publish settings are incomplete: ${check.errors.join(", ")}.`, appDefinedPayload: check.errors.join(",") };
+    }
+    const files = outputMedia.flatMap((media) => media.files ?? []);
+    if (files.length === 0) return { status: "app_error", message: "No graphic was exported from Canva." };
+    const from = settings.usage?.from ?? "";
+    const to = settings.usage?.to || from;
+    const useAt = from ? (from === to ? from : `${from}/${to}`) : null;
+    const movement = settings.graphics?.movement === "none" ? "cut" : settings.graphics?.movement || "cut";
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        await pushCanvaGraphic({
+          title: files.length > 1 ? `${String(settings.name ?? "Graphic")} — ${index + 1}` : String(settings.name ?? "Graphic"),
+          imageUrl: file.url,
+          movement,
+          useAt,
+        });
+      }
+      return { status: "completed" };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      return { status: "app_error", message: `Could not send graphic to ATEM: ${detail}`, appDefinedPayload: detail.slice(0, 300) };
+    }
   }
 
   const settings = { ...decodePublishRef(publishRef), targetId: outputType.id };

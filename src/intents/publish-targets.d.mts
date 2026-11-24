@@ -7,9 +7,10 @@ export type Target = {
   height: number;
   enabled: boolean;
   transparent?: boolean;
-  kind?: "signage";
+  kind?: "signage" | "signage-view";
   label?: string;
   dynamicSize?: boolean;
+  autoSize?: boolean;
   accepts?: { image?: { format: string }; video?: { format: string } };
 };
 export type PublishSettingsData = {
@@ -19,6 +20,7 @@ export type PublishSettingsData = {
   /** Confirmed: no use date, the slides are a permanent asset. */
   permanent?: boolean;
   signage?: SignageSettings;
+  graphics?: { movement?: string };
   goLive?: GoLiveSettings;
 };
 export type GoLiveSettings = { on: boolean; feed: string; piOutput: string; projector: string; ftb: boolean };
@@ -33,18 +35,22 @@ export function decodePublishRef(publishRef: string | undefined): PublishSetting
 export function buildPushPayload(
   settings: PublishSettingsData,
   pages: { url: string; pageNumber: number; name?: string }[],
-): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt: string; pages: { url: string; pageNumber: number; name?: string }[] };
+): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt?: string; pages: { url: string; pageNumber: number; name?: string }[] };
 
 export type SignageSettings = {
   screenId: string;
+  alt?: string;
+  title?: string;
+  text?: string;
+  link?: string;
   secondsAll?: number;
   secondsByPage?: Record<string, number>;
   /** true = the slides go live at once (needs the operate right); false = added disabled. */
   enableNow?: boolean;
 };
 export type TargetOptions = { signageUrl?: string };
-export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video" };
-export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number };
+export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video"; name?: string };
+export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
 export function getTargets(options?: TargetOptions): Target[];
 export function signageFallbackSize(orientation?: string): { width: number; height: number };
 export function signageKindFor(file: SignageFile): "image" | "video" | undefined;

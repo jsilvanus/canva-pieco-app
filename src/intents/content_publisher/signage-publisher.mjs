@@ -19,23 +19,35 @@ const DRAFT_CHANNEL = "canva-pieco-app.signage-draft";
  */
 
 export function isSignageTarget(target) {
-  return target?.kind === "signage";
+  return target?.kind === "signage" || target?.kind === "signage-view";
 }
 
 export function screenTargetDimensions(screen) {
-  const orientation =
-    screen?.orientation === "vertical" || screen?.orientation === "portrait" ? "vertical" : "landscape";
-  const fallback = signageFallbackSize(orientation);
+  const explicitWidth = typeof screen?.width === "number" && screen.width > 0 ? screen.width : null;
+  const explicitHeight = typeof screen?.height === "number" && screen.height > 0 ? screen.height : null;
+  const aspect = /^([0-9]{1,2}):([0-9]{1,2})$/.exec(screen?.embed?.options?.aspect ?? "");
+  const ratio = aspect ? Number(aspect[1]) / Number(aspect[2]) : null;
+  const orientation = explicitWidth && explicitHeight
+    ? (explicitWidth >= explicitHeight ? "landscape" : "vertical")
+    : ratio
+      ? (ratio >= 1 ? "landscape" : "vertical")
+      : screen?.orientation === "vertical" || screen?.orientation === "portrait" ? "vertical" : "landscape";
+  const fallback = ratio
+    ? (ratio >= 1
+      ? { width: 1920, height: Math.round(1920 / ratio) }
+      : { width: Math.round(1920 * ratio), height: 1920 })
+    : signageFallbackSize(orientation);
   return {
     orientation,
-    width: typeof screen?.width === "number" && screen.width > 0 ? screen.width : fallback.width,
-    height: typeof screen?.height === "number" && screen.height > 0 ? screen.height : fallback.height,
+    width: explicitWidth ?? fallback.width,
+    height: explicitHeight ?? fallback.height,
   };
 }
 
 export function formatScreenOptionLabel(screen) {
   const { orientation, width, height } = screenTargetDimensions(screen);
-  return `${screen.name} (${orientation}, ${width} × ${height})`;
+  const rights = Array.isArray(screen?.rights) ? screen.rights.join("/") : "";
+  return `${screen.name} (${orientation}, ${width} × ${height})${rights ? ` · ${rights}` : ""}`;
 }
 
 export function findScreenById(screens, screenId) {
@@ -241,6 +253,7 @@ export async function publishSignageContent(
       url: file.url,
       pageNumber: index + 1,
       kind: fileKindHint(file),
+      name: file.name,
     }));
   if (files.length === 0) {
     return { status: "app_error", message: "No slides were exported from Canva." };

@@ -10,55 +10,54 @@
 
 export const TARGETS = [
   {
-    id: "piprogram-atem",
-    displayName: "PiProgram → ATEM",
+    id: "piprogram",
+    displayName: "Keskuskirkko (piProgram)",
     orientation: "landscape",
     width: 1920,
     height: 1080,
     enabled: true,
-    // ATEM: transparent areas are kept so a key colour can replace them. The projector target keeps the normal background.
-    transparent: true,
-  },
-  {
-    id: "piprogram-vertical-projector",
-    displayName: "PiProgram → vertical projector",
-    orientation: "vertical",
-    // Epson projector, rotated: 10:16.
-    width: 1200,
-    height: 1920,
-    enabled: true,
+    autoSize: true,
   },
   {
     id: "pigraphics-stream",
-    displayName: "PiGraphics → stream",
+    displayName: "Keskuskirkko (ATEM)",
     orientation: "landscape",
     width: 1920,
     height: 1080,
     enabled: true,
-    // Overlays keyed over the stream keep their transparent background.
     transparent: true,
-  },
-  {
-    id: "saarnavideo",
-    displayName: "Saarnavideo (later)",
-    orientation: "landscape",
-    width: 1920,
-    height: 1080,
-    enabled: false,
   },
   {
     id: "signage",
     kind: "signage",
-    label: "Signage (Sissi)",
-    displayName: "Signage (Sissi)",
-    // Size and orientation come from the chosen screen; these are the fallbacks.
+    label: "Infonäytöt (Sissi)",
+    displayName: "Infonäytöt (Sissi)",
     dynamicSize: true,
     orientation: "landscape",
     width: 1920,
     height: 1080,
-    // Enabled only when a signageUrl option is given (see withOptions).
     enabled: false,
     accepts: { image: { format: "png" }, video: { format: "mp4" } },
+  },
+  {
+    id: "signage-view",
+    kind: "signage-view",
+    label: "Verkkosivut (Sissi)",
+    displayName: "Verkkosivut (Sissi)",
+    dynamicSize: true,
+    orientation: "landscape",
+    width: 1920,
+    height: 1080,
+    enabled: false,
+    accepts: { image: { format: "png" }, video: { format: "mp4" } },
+  },
+  {
+    id: "saarnavideo",
+    displayName: "Saarnavideo [later]",
+    orientation: "landscape",
+    width: 1920,
+    height: 1080,
+    enabled: false,
   },
 ];
 
@@ -70,7 +69,7 @@ export function signageFallbackSize(orientation) {
 }
 
 function withOptions(target, options) {
-  if (target?.kind !== "signage") return target;
+  if (target?.kind !== "signage" && target?.kind !== "signage-view") return target;
   return { ...target, enabled: Boolean(String(options?.signageUrl ?? "").trim()) };
 }
 
@@ -80,7 +79,8 @@ export function getTargets(options) {
 }
 
 export function targetById(id, options) {
-  const t = TARGETS.find((x) => x.id === id) ?? null;
+  const stableId = id === "piprogram-atem" || id === "piprogram-vertical-projector" ? "piprogram" : id;
+  const t = TARGETS.find((x) => x.id === stableId) ?? null;
   return t ? withOptions(t, options) : null;
 }
 
@@ -98,7 +98,7 @@ export function validatePublishSettings(settings, options) {
 
   if (!String(settings?.name ?? "").trim()) errors.push("name");
 
-  if (target?.kind === "signage") {
+  if (target?.kind === "signage" || target?.kind === "signage-view") {
     errors.push(...validateSignageSettings(settings));
     return {
       validityState: errors.length === 0 ? "valid" : "invalid_missing_required_fields",
@@ -129,7 +129,9 @@ export function encodePublishRef(settings) {
 
 export function decodePublishRef(publishRef) {
   try {
-    return publishRef ? JSON.parse(publishRef) : {};
+    const settings = publishRef ? JSON.parse(publishRef) : {};
+    if (settings.targetId === "piprogram-atem" || settings.targetId === "piprogram-vertical-projector") settings.targetId = "piprogram";
+    return settings;
   } catch {
     return {};
   }
@@ -145,10 +147,11 @@ export function buildPushPayload(settings, pages) {
   const from = settings.usage?.from ?? "";
   const to = settings.usage?.to || from;
   const target = targetById(settings.targetId);
+  const targetId = target?.id === "piprogram" ? "piprogram" : settings.targetId;
   return {
     title: settings.name.trim(),
-    target: settings.targetId,
-    ...(target ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
+    target: targetId,
+    ...(target && target.id !== "piprogram" ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
     ...(from ? { useAt: from === to ? from : `${from}/${to}` } : {}),
     pages,
   };
@@ -163,6 +166,10 @@ function validateSignageSettings(settings) {
   if (String(settings?.name ?? "").trim().length > 200) errors.push("name");
   const s = settings?.signage ?? {};
   if (!String(s.screenId ?? "").trim()) errors.push("screenId");
+  if (settings.targetId === "signage-view") {
+    for (const field of ["title", "text", "alt"]) if (typeof s[field] === "string" && s[field].length > 500) errors.push(field);
+    if (s.link && (!/^https:\/\//i.test(s.link) || s.link.length > 2048)) errors.push("link");
+  }
   const values = [];
   if (s.secondsAll !== undefined && s.secondsAll !== null) values.push(s.secondsAll);
   if (s.secondsByPage && typeof s.secondsByPage === "object") values.push(...Object.values(s.secondsByPage));
@@ -203,6 +210,12 @@ export function buildSignagePushPayload(settings, files) {
         pageNumber,
         ...(kind ? { kind } : {}),
         url: f.url,
+        ...(settings.targetId === "signage-view" ? {
+          alt: String(s.alt || f.name || settings.name || `Page ${pageNumber}`).trim(),
+          ...(s.title ? { headline: s.title } : {}),
+          ...(s.text ? { caption: s.text } : {}),
+          ...(s.link ? { link: s.link } : {}),
+        } : {}),
         ...(kind !== "video" && seconds !== undefined && seconds !== null ? { seconds } : {}),
       };
     }),
@@ -215,6 +228,7 @@ export function encodeSignageSettings(sig) {
   if (sig?.secondsAll !== undefined) out.secondsAll = sig.secondsAll;
   if (sig?.secondsByPage) out.secondsByPage = sig.secondsByPage;
   if (sig?.enableNow) out.enableNow = true;
+  for (const key of ["alt", "title", "text", "link"]) if (sig?.[key]) out[key] = sig[key];
   return JSON.stringify(out);
 }
 
@@ -232,5 +246,9 @@ export function parseSignageSettings(text) {
     secondsByPage: o.secondsByPage && typeof o.secondsByPage === "object" ? o.secondsByPage : {},
     // publishRefs from before 2026-11-23 may hold mode/confirmReplace; they are ignored (nothing goes live by itself).
     enableNow: o.enableNow === true,
+    ...(typeof o.alt === "string" ? { alt: o.alt } : {}),
+    ...(typeof o.title === "string" ? { title: o.title } : {}),
+    ...(typeof o.text === "string" ? { text: o.text } : {}),
+    ...(typeof o.link === "string" ? { link: o.link } : {}),
   };
 }

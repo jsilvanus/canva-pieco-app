@@ -250,6 +250,36 @@ paths:
           description: Missing, invalid or expired token.
         "403":
           description: Signed in, but the account has no rights for this app.
+  /api/v1/canva/animations:
+    get:
+      summary: List ATEM DVE animations available through PiGraphics
+      description: >-
+        Returns the animation identifiers advertised by PiGraphics to Pi Gateway.
+        Canva uses these values on the graphic object sent to the gateway; the app never
+        connects to PiGraphics directly.
+      operationId: listCanvaAnimations
+      responses:
+        "200":
+          description: Available animation identifiers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [animations]
+                properties:
+                  animations:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: string
+                        - type: object
+                          required: [id]
+                          properties:
+                            id: { type: string }
+                            label: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /api/v1/graphics/canva/push:
     post:
       summary: Broadcast Graphic Push with ATEM Flying Key
@@ -275,6 +305,10 @@ paths:
                 image:
                   type: string
                   description: Optional base64 encoded PNG
+                useAt:
+                  description: Optional service date or date range for the graphic.
+                  type: string
+                  example: 2026-11-29
                 movement:
                   type: string
                   enum: [fly-left, fly-right, fly-bottom, fly-top, zoom, dissolve, cut]

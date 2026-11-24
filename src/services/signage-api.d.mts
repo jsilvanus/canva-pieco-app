@@ -9,8 +9,11 @@ export type SignageScreen = {
   maxVideoSeconds: number | null;
   entryCount: number;
   playlistVersion: number;
+  kind?: "screen" | "view" | "aggregate";
+  rights?: string[];
+  embed?: { type?: "carousel" | "single" | "gallery"; options?: { fit?: "contain" | "cover"; aspect?: string; dots?: boolean }; allowedOrigins?: string[] } | null;
 };
-export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number };
+export type SignagePage = { pageNumber: number; url: string; kind?: "image" | "video"; seconds?: number; alt?: string; headline?: string; caption?: string; link?: string };
 export type SignagePushRequest = { screenId: string; mode?: "append" | "replace"; enabled?: boolean; title: string; pages: SignagePage[] };
 export type SignagePushAccepted = { pushId: string; taskId: string; state: "queued"; screenId: string; isSimulated?: boolean };
 export type SignagePushStatus = {
@@ -60,3 +63,5 @@ export function pushSignage(request: SignagePushRequest, options?: SignageReques
 export function getSignagePush(pushId: string, options?: SignageRequestOptions): Promise<SignagePushStatus>;
 export function describeSignagePush(status: SignagePushStatus): string;
 export function waitForSignagePush(pushId: string, options?: SignageWaitOptions): Promise<SignagePushStatus>;
+
+export function listViews(options?: SignageRequestOptions): Promise<SignageScreen[]>;

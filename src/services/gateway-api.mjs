@@ -334,6 +334,21 @@ export async function setProjectorPicMute({ muted, pipelineId }) {
   }
 }
 
+/** DVE transition names advertised by PiGraphics through Pi Gateway. */
+export async function listCanvaAnimations() {
+  try {
+    const data = await apiRequest("/api/v1/canva/animations", { timeoutMs: 5000 });
+    const animations = Array.isArray(data?.animations) ? data.animations : [];
+    return animations.filter((item) => typeof item === "string" || (item && typeof item.id === "string"));
+  } catch (err) {
+    // Older gateways do not expose discovery yet; the known ATEM DVE set remains a safe fallback.
+    if (CONFIG.isDev || (err instanceof GatewayError && err.status === 404)) {
+      return ["none", "fly-left", "fly-right", "fly-bottom", "fly-top", "zoom", "dissolve", "cut"];
+    }
+    throw err;
+  }
+}
+
 /**
  * Push transparent graphic still to ATEM Media Pool with Flying Key.
  */
@@ -345,6 +360,7 @@ export async function pushCanvaGraphic({
   autoHideMs = 7000,
   keyer = "usk",
   slot = 7,
+  useAt = null,
 }) {
   try {
     return await apiRequest("/api/v1/graphics/canva/push", {
@@ -357,6 +373,7 @@ export async function pushCanvaGraphic({
         autoHideMs,
         keyer,
         slot,
+        ...(useAt ? { useAt } : {}),
       }),
     });
   } catch (err) {
