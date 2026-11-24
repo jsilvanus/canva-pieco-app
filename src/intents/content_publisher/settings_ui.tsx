@@ -139,7 +139,9 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
             tone="info"
             text={
               isSignage
-                ? intl.formatMessage({ defaultMessage: isView ? "Websites (Sissi)" : "Info screens (Sissi)", description: "Badge naming the Sissi publishing target" })
+                ? (isView
+                  ? intl.formatMessage({ defaultMessage: "Websites (Sissi)", description: "Badge naming the Sissi web-view target" })
+                  : intl.formatMessage({ defaultMessage: "Info screens (Sissi)", description: "Badge naming the Sissi physical-screen target" }))
                 : intl.formatMessage({ defaultMessage: "Pi gateway", description: "Badge naming where the slides go" })
             }
           />
