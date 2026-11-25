@@ -158,3 +158,117 @@ export async function listPiSystems({
 
   return systems;
 }
+
+/**
+ * Resolves the absolute upload URL for an export target based on target.ingest and parent service URL.
+ * Follows the Tunnus Discovery convention:
+ * 1. If target.ingest.url is absolute (https://...), use directly.
+ * 2. If target.ingest.path is relative (/api/v1/...), resolve against service root.
+ *
+ * @param {any} target
+ * @param {any} service
+ * @returns {string}
+ */
+export function resolveExportTargetIngestUrl(target, service) {
+  if (!target?.ingest) return "";
+  const rawUrl = target.ingest.url;
+  if (typeof rawUrl === "string" && /^https?:\/\//i.test(rawUrl)) {
+    return rawUrl;
+  }
+  const baseUrl = service?.endpoint_url || service?.gatewayUrl || service?.url || "";
+  const path = target.ingest.path || "";
+  if (!baseUrl) return path;
+
+  const cleanBase = baseUrl.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+}
+
+/**
+ * Resolves the authentication parameters for an export target, inheriting from parent service auth.
+ *
+ * @param {any} target
+ * @param {any} service
+ * @returns {ServiceAuth}
+ */
+export function resolveExportTargetAuth(target, service) {
+  return target?.ingest?.auth || service?.auth || { type: "none" };
+}
+
+/**
+ * Discovers export targets across all active parish services registered in Tunnus.
+ * Parses the flattened `metadata.export_targets` list and applies URL resolution and auth inheritance.
+ *
+ * @param {Object} [options]
+ * @param {string} [options.discoveryUrl]
+ * @param {string} [options.category] Optional filter (e.g. 'slides', 'signage', 'broadcast')
+ * @param {typeof fetch} [options.fetch]
+ * @param {AbortSignal} [options.signal]
+ */
+export async function listDiscoveredExportTargets({
+  discoveryUrl = CONFIG.piDiscoveryUrl || CONFIG.tunnusUrl,
+  category,
+  fetch: fetchFn = globalThis.fetch,
+  signal,
+} = {}) {
+  const normalizedDiscovery = normalizeGatewayUrl(discoveryUrl);
+  if (!normalizedDiscovery || typeof fetchFn !== "function") {
+    return [];
+  }
+
+  const token = await getBearerToken().catch(() => null);
+  const headers = { Accept: "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await fetchFn(`${normalizedDiscovery}/api/v1/discovery?capability=export_target`, {
+      method: "GET",
+      headers,
+      signal,
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    const services = Array.isArray(body?.services)
+      ? body.services
+      : Array.isArray(body?.items)
+      ? body.items
+      : Array.isArray(body)
+      ? body
+      : [];
+
+    const resolvedTargets = [];
+    for (const service of services) {
+      if (!service || typeof service !== "object") continue;
+      const targets = service.metadata?.export_targets;
+      if (!Array.isArray(targets)) continue;
+
+      for (const target of targets) {
+        if (!target || typeof target !== "object") continue;
+        if (category && target.category && target.category !== category) continue;
+
+        resolvedTargets.push({
+          targetId: target.id,
+          serviceId: service.id,
+          serviceName: service.name,
+          venue: service.venue,
+          name: target.name || target.id,
+          category: target.category || "slides",
+          aspectRatio: target.aspect_ratio || "16:9",
+          resolution: target.resolution || { width: 1920, height: 1080 },
+          formats: Array.isArray(target.formats) ? target.formats : ["png"],
+          multiPage: Boolean(target.multi_page),
+          alphaChannel: Boolean(target.alpha_channel),
+          ingestUrl: resolveExportTargetIngestUrl(target, service),
+          method: target.ingest?.method || "POST",
+          auth: resolveExportTargetAuth(target, service),
+          prefillRules: target.prefill_rules || { extract_text: false },
+        });
+      }
+    }
+    return resolvedTargets;
+  } catch {
+    return [];
+  }
+}

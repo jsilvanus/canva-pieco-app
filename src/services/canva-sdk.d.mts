@@ -9,6 +9,14 @@ export type DesignPageText = {
 
 export function isRunningInCanva(): boolean;
 export function getDesignTitle(): Promise<string>;
+export function inspectCurrentDesignElements(): Promise<{
+  supported: boolean;
+  totalElements: number;
+  imageCount: number;
+  textCount: number;
+  groupCount: number;
+  otherCount: number;
+}>;
 export function extractTextBlocksFromElements(elements: unknown): DesignPageText;
 export function readCachedDesignPageText(): DesignPageText | null;
 export function readDesignPageText(): Promise<DesignPageText | null>;

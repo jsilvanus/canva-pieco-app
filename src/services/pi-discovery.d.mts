@@ -46,4 +46,40 @@ export interface ListPiSystemsOptions {
   signal?: AbortSignal;
 }
 
+export interface DiscoveredExportTarget {
+  targetId: string;
+  serviceId: string;
+  serviceName: string;
+  venue?: string;
+  name: string;
+  category: 'slides' | 'signage' | 'broadcast' | 'print' | 'web' | 'social' | string;
+  aspectRatio: string;
+  resolution: {
+    width: number;
+    height: number;
+    pixel_ratio?: number;
+    dpi?: number;
+  };
+  formats: string[];
+  multiPage: boolean;
+  alphaChannel: boolean;
+  ingestUrl: string;
+  method: string;
+  auth: ServiceAuth;
+  prefillRules: {
+    extract_text?: boolean;
+    field_mapping?: Record<string, string>;
+  };
+}
+
+export function resolveExportTargetIngestUrl(target: unknown, service: unknown): string;
+export function resolveExportTargetAuth(target: unknown, service: unknown): ServiceAuth;
+
+export function listDiscoveredExportTargets(options?: {
+  discoveryUrl?: string;
+  category?: string;
+  fetch?: typeof fetch;
+  signal?: AbortSignal;
+}): Promise<DiscoveredExportTarget[]>;
+
 export function listPiSystems(options?: ListPiSystemsOptions): Promise<PiSystemEndpoint[]>;

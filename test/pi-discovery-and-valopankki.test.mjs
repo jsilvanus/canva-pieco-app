@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { listPiSystems } from "../src/services/pi-discovery.mjs";
+import {
+  listPiSystems,
+  resolveExportTargetIngestUrl,
+  resolveExportTargetAuth,
+  listDiscoveredExportTargets,
+} from "../src/services/pi-discovery.mjs";
 import {
   getValopankkiBrandKit,
   listValopankkiCollections,
@@ -8,9 +13,12 @@ import {
   useValopankkiAsset,
   recordAssetUsedInDesign,
   getAssetsUsedInDesign,
+  getTrackedDesignAssets,
+  removeAssetFromDesign,
   clearAssetsUsedInDesign,
   reportValopankkiExport,
 } from "../src/services/valopankki-api.mjs";
+import { inspectCurrentDesignElements } from "../src/services/canva-sdk.mjs";
 import {
   getOverwriteTarget,
   setOverwriteTarget,
@@ -267,4 +275,172 @@ test("overwrite target state can be set, read, and cleared", () => {
 
   clearOverwriteTarget();
   assert.equal(getOverwriteTarget(), null);
+});
+
+test("resolveExportTargetIngestUrl resolves absolute and relative ingest paths", () => {
+  const service = {
+    url: "https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443",
+  };
+
+  // Relative path against service URL
+  const targetRel = {
+    ingest: { path: "/api/v1/pipgm/items" },
+  };
+  const resolvedRel = resolveExportTargetIngestUrl(targetRel, service);
+  assert.equal(resolvedRel, "https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443/api/v1/pipgm/items");
+
+  // Absolute URL override
+  const targetAbs = {
+    ingest: { url: "https://cdn.custom.domain/upload" },
+  };
+  const resolvedAbs = resolveExportTargetIngestUrl(targetAbs, service);
+  assert.equal(resolvedAbs, "https://cdn.custom.domain/upload");
+});
+
+test("resolveExportTargetAuth inherits service auth and supports target override", () => {
+  const service = {
+    auth: {
+      type: "oidc",
+      client_id: "canva-pieco-app",
+      scopes: ["signage:write"],
+    },
+  };
+
+  // Inherited
+  const targetDefault = { ingest: { path: "/api/screens/1" } };
+  const authInherited = resolveExportTargetAuth(targetDefault, service);
+  assert.equal(authInherited.type, "oidc");
+  assert.equal(authInherited.client_id, "canva-pieco-app");
+
+  // Overridden
+  const targetCustom = {
+    ingest: {
+      auth: { type: "api_key", header_name: "X-Special-Key" },
+    },
+  };
+  const authOverridden = resolveExportTargetAuth(targetCustom, service);
+  assert.equal(authOverridden.type, "api_key");
+  assert.equal(authOverridden.header_name, "X-Special-Key");
+});
+
+test("listDiscoveredExportTargets parses flattened metadata.export_targets", async () => {
+  const mockDiscovery = {
+    services: [
+      {
+        id: "keskuskirkko-piprogram",
+        name: "Keskuskirkko — Sali (Pi Program)",
+        type: "piprogram",
+        venue: "keskuskirkko",
+        url: "https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443",
+        auth: { type: "api_key", header_name: "X-API-Key" },
+        capabilities: ["slides", "export_target"],
+        metadata: {
+          export_targets: [
+            {
+              id: "sali-valkokangas-16-9",
+              name: "Pääsalin valkokangas (16:9)",
+              category: "slides",
+              aspect_ratio: "16:9",
+              resolution: { width: 1920, height: 1080 },
+              formats: ["png", "jpeg"],
+              multi_page: true,
+              ingest: { path: "/api/v1/pipgm/items", method: "POST" },
+            },
+          ],
+        },
+      },
+      {
+        id: "sissi-signage",
+        name: "Kyltti / Sissi Infonäytöt",
+        type: "signage",
+        venue: "parish-wide",
+        url: "https://kehitys.riihimaenseurakunta.fi/sissi",
+        auth: { type: "oidc", client_id: "canva-pieco-app" },
+        capabilities: ["screen_push", "export_target"],
+        metadata: {
+          export_targets: [
+            {
+              id: "keskuskirkko-aula-portrait",
+              name: "Keskuskirkon eteisaula (Pysty 9:16)",
+              category: "signage",
+              aspect_ratio: "9:16",
+              resolution: { width: 1080, height: 1920 },
+              formats: ["png", "jpeg"],
+              multi_page: false,
+              ingest: { path: "/api/screens/aula/content" },
+              prefill_rules: { extract_text: true },
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => mockDiscovery,
+  });
+
+  const targets = await listDiscoveredExportTargets({
+    discoveryUrl: "https://tunnus.riihimaenseurakunta.fi",
+    fetch: mockFetch,
+  });
+
+  assert.equal(targets.length, 2);
+
+  // Check 1st target (PiProgram slides)
+  assert.equal(targets[0].targetId, "sali-valkokangas-16-9");
+  assert.equal(targets[0].serviceId, "keskuskirkko-piprogram");
+  assert.equal(targets[0].category, "slides");
+  assert.equal(targets[0].aspectRatio, "16:9");
+  assert.equal(targets[0].multiPage, true);
+  assert.equal(
+    targets[0].ingestUrl,
+    "https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443/api/v1/pipgm/items"
+  );
+  assert.equal(targets[0].auth.type, "api_key");
+
+  // Check 2nd target (Sissi signage screen with multiPage=false and extractText=true)
+  assert.equal(targets[1].targetId, "keskuskirkko-aula-portrait");
+  assert.equal(targets[1].category, "signage");
+  assert.equal(targets[1].aspectRatio, "9:16");
+  assert.equal(targets[1].multiPage, false);
+  assert.equal(targets[1].prefillRules.extract_text, true);
+  assert.equal(
+    targets[1].ingestUrl,
+    "https://kehitys.riihimaenseurakunta.fi/sissi/api/screens/aula/content"
+  );
+  assert.equal(targets[1].auth.type, "oidc");
+});
+
+test("detailed tracked assets support metadata, removal, and canvas inspection", async () => {
+  const designId = "DAG_DETAILED_TEST_1";
+  clearAssetsUsedInDesign(designId);
+
+  // Record asset with rich metadata
+  recordAssetUsedInDesign(designId, {
+    id: "photo-church-1",
+    title: "Keskuskirkko kesällä",
+    kind: "photo",
+    format: "jpeg",
+    thumbnailUrl: "https://valopankki.local/thumb-1.jpg",
+  });
+
+  const tracked = getTrackedDesignAssets(designId);
+  assert.equal(tracked.length, 1);
+  assert.equal(tracked[0].id, "photo-church-1");
+  assert.equal(tracked[0].title, "Keskuskirkko kesällä");
+  assert.equal(tracked[0].kind, "photo");
+  assert.equal(tracked[0].format, "jpeg");
+  assert.ok(tracked[0].insertedAt);
+
+  // Remove specific asset
+  removeAssetFromDesign(designId, "photo-church-1");
+  assert.equal(getTrackedDesignAssets(designId).length, 0);
+
+  // Canvas elements inspection fallback outside Canva
+  const inspection = await inspectCurrentDesignElements();
+  assert.equal(inspection.supported, true);
+  assert.equal(inspection.imageCount, 1);
 });

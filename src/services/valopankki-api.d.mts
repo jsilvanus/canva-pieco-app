@@ -108,8 +108,22 @@ export interface SearchValopankkiOptions extends ValopankkiRequestOptions {
   limit?: number;
 }
 
-export function recordAssetUsedInDesign(designId: string, assetId: string): void;
+export interface TrackedDesignAsset {
+  id: string;
+  title: string;
+  kind?: string;
+  format?: string;
+  thumbnailUrl?: string;
+  insertedAt: string;
+}
+
+export function recordAssetUsedInDesign(
+  designId: string,
+  assetOrId: string | { id: string; title?: string; kind?: string; format?: string; thumbnailUrl?: string }
+): void;
 export function getAssetsUsedInDesign(designId: string): string[];
+export function getTrackedDesignAssets(designId: string): TrackedDesignAsset[];
+export function removeAssetFromDesign(designId: string, assetId: string): void;
 export function clearAssetsUsedInDesign(designId: string): void;
 
 export function getValopankkiBrandKit(options?: ValopankkiRequestOptions): Promise<ValopankkiBrandKit | null>;

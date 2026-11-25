@@ -160,6 +160,59 @@ export async function readDesignPageText() {
 }
 
 /**
+ * Inspects elements on the current design canvas to count images, text, and groups.
+ * Used by the Valopankki usage tracking panel to verify whether image elements remain on canvas.
+ */
+export async function inspectCurrentDesignElements() {
+  if (!isRunningInCanva()) {
+    return {
+      supported: true,
+      totalElements: 2,
+      imageCount: 1,
+      textCount: 1,
+      groupCount: 0,
+      otherCount: 0,
+    };
+  }
+
+  try {
+    const [{ openDesign }, { features }] = await Promise.all([
+      import("@canva/design"),
+      import("@canva/platform"),
+    ]);
+    if (!features.isSupported(openDesign)) {
+      return { supported: false, totalElements: 0, imageCount: 0, textCount: 0, groupCount: 0, otherCount: 0 };
+    }
+
+    const summary = { supported: true, totalElements: 0, imageCount: 0, textCount: 0, groupCount: 0, otherCount: 0 };
+    await openDesign({ type: "current_page" }, async (session) => {
+      if (session?.page?.type === "absolute") {
+        const countElements = (list) => {
+          for (const el of readListItems(list)) {
+            if (!el || typeof el !== "object") continue;
+            summary.totalElements++;
+            if (el.type === "image") {
+              summary.imageCount++;
+            } else if (el.type === "text") {
+              summary.textCount++;
+            } else if (el.type === "group") {
+              summary.groupCount++;
+              if (el.contents) countElements(el.contents);
+            } else {
+              summary.otherCount++;
+            }
+          }
+        };
+        countElements(session.page.elements);
+      }
+    });
+    return summary;
+  } catch {
+    return { supported: false, totalElements: 0, imageCount: 0, textCount: 0, groupCount: 0, otherCount: 0 };
+  }
+}
+
+/**
  * Reads the current Canva design's title for prefilling name fields.
  * Returns "" when unavailable or outside Canva (mock title in dev).
  */

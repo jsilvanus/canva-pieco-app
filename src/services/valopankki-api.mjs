@@ -4,23 +4,66 @@ import { isRunningInCanva } from "./canva-sdk.mjs";
 
 const DEFAULT_VALOPANKKI_BASE = "https://kehitys.riihimaenseurakunta.fi/valopankki";
 const DESIGN_ASSETS_PREFIX = "canva-pieco-app.design-assets.";
+const DESIGN_ASSETS_DETAILED_PREFIX = "canva-pieco-app.design-assets-detailed.";
 
 const memoryDesignAssets = new Map();
+const memoryDetailedAssets = new Map();
 
-export function recordAssetUsedInDesign(designId, assetId) {
-  if (!designId || !assetId) return;
-  const list = memoryDesignAssets.get(designId) || [];
-  if (!list.includes(String(assetId))) list.push(String(assetId));
-  memoryDesignAssets.set(designId, list);
+/**
+ * Records an asset as being used in the current Canva design.
+ * Accepts either an asset ID string or a full asset object with metadata.
+ */
+export function recordAssetUsedInDesign(designId, assetOrId) {
+  if (!designId || !assetOrId) return;
+  const assetId = typeof assetOrId === "object" ? String(assetOrId.id) : String(assetOrId);
+  if (!assetId) return;
+
+  // 1. Update basic ID list for backward compatibility
+  const idList = memoryDesignAssets.get(designId) || [];
+  if (!idList.includes(assetId)) idList.push(assetId);
+  memoryDesignAssets.set(designId, idList);
+
+  // 2. Update detailed item list
+  const detailedList = memoryDetailedAssets.get(designId) || [];
+  const existingIdx = detailedList.findIndex((item) => item.id === assetId);
+  const detail = typeof assetOrId === "object"
+    ? {
+        id: assetId,
+        title: assetOrId.title || assetId,
+        kind: assetOrId.kind || "asset",
+        format: assetOrId.format || "png",
+        thumbnailUrl: assetOrId.thumbnailUrl || "",
+        insertedAt: new Date().toISOString(),
+      }
+    : {
+        id: assetId,
+        title: assetId,
+        kind: "asset",
+        format: "png",
+        thumbnailUrl: "",
+        insertedAt: new Date().toISOString(),
+      };
+
+  if (existingIdx >= 0) {
+    detailedList[existingIdx] = { ...detailedList[existingIdx], ...detail };
+  } else {
+    detailedList.push(detail);
+  }
+  memoryDetailedAssets.set(designId, detailedList);
 
   try {
     const key = `${DESIGN_ASSETS_PREFIX}${designId}`;
-    globalThis.localStorage?.setItem(key, JSON.stringify(list));
+    globalThis.localStorage?.setItem(key, JSON.stringify(idList));
+    const detailedKey = `${DESIGN_ASSETS_DETAILED_PREFIX}${designId}`;
+    globalThis.localStorage?.setItem(detailedKey, JSON.stringify(detailedList));
   } catch {
     // ignore
   }
 }
 
+/**
+ * Returns string list of asset IDs used in the given Canva design.
+ */
 export function getAssetsUsedInDesign(designId) {
   if (!designId) return [];
   try {
@@ -36,15 +79,74 @@ export function getAssetsUsedInDesign(designId) {
   return memoryDesignAssets.get(designId) || [];
 }
 
+/**
+ * Returns detailed metadata for all assets tracked in the given Canva design.
+ */
+export function getTrackedDesignAssets(designId) {
+  if (!designId) return [];
+  try {
+    const key = `${DESIGN_ASSETS_DETAILED_PREFIX}${designId}`;
+    const raw = globalThis.localStorage?.getItem(key);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  const inMemory = memoryDetailedAssets.get(designId);
+  if (inMemory && inMemory.length > 0) return inMemory;
+
+  // Fallback from raw IDs if detailed record is absent
+  const ids = getAssetsUsedInDesign(designId);
+  return ids.map((id) => ({
+    id,
+    title: id,
+    kind: "asset",
+    format: "png",
+    thumbnailUrl: "",
+    insertedAt: "",
+  }));
+}
+
+/**
+ * Removes a specific asset from the design's tracking list (e.g. if deleted from canvas).
+ */
+export function removeAssetFromDesign(designId, assetId) {
+  if (!designId || !assetId) return;
+  const strId = String(assetId);
+
+  const ids = (memoryDesignAssets.get(designId) || []).filter((id) => id !== strId);
+  memoryDesignAssets.set(designId, ids);
+
+  const detailed = (memoryDetailedAssets.get(designId) || []).filter((item) => item.id !== strId);
+  memoryDetailedAssets.set(designId, detailed);
+
+  try {
+    const key = `${DESIGN_ASSETS_PREFIX}${designId}`;
+    globalThis.localStorage?.setItem(key, JSON.stringify(ids));
+    const detailedKey = `${DESIGN_ASSETS_DETAILED_PREFIX}${designId}`;
+    globalThis.localStorage?.setItem(detailedKey, JSON.stringify(detailed));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Clears all asset associations for the given Canva design.
+ */
 export function clearAssetsUsedInDesign(designId) {
   if (!designId) return;
   const key = `${DESIGN_ASSETS_PREFIX}${designId}`;
+  const detailedKey = `${DESIGN_ASSETS_DETAILED_PREFIX}${designId}`;
   try {
     globalThis.localStorage?.removeItem(key);
+    globalThis.localStorage?.removeItem(detailedKey);
   } catch {
     // ignore
   }
   memoryDesignAssets.delete(designId);
+  memoryDetailedAssets.delete(designId);
 }
 
 function resolveApiBase(customUrl) {
@@ -300,7 +402,7 @@ export async function insertValopankkiAssetIntoDesign(
 ) {
   const assetId = asset.id || (typeof asset.useUrl === "string" ? asset.useUrl.split("/").pop() : "asset");
   if (designContext.designId && assetId) {
-    recordAssetUsedInDesign(designContext.designId, assetId);
+    recordAssetUsedInDesign(designContext.designId, { ...asset, id: assetId });
   }
 
   if (!isRunningInCanva()) {
