@@ -14,6 +14,9 @@ importers:
       '@canva/app-ui-kit':
         specifier: ^5.15.0
         version: 5.15.0(@types/react@19.3.0)(mobx@6.16.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@canva/asset':
+        specifier: ^2.4.0
+        version: 2.4.0(@canva/error@2.2.2)
       '@canva/design':
         specifier: ^2.14.0
         version: 2.14.0(@canva/error@2.2.2)
@@ -192,6 +195,11 @@ packages:
       mobx: ^6.16.0
       react: ^19.2.3
       react-dom: ^19.2.3
+
+  '@canva/asset@2.4.0':
+    resolution: {integrity: sha512-hSdZn6d4G/0GHnP+7hlv2Hkc7k5bwnzygRBTeCLaYb51kZdsVLf0m/q3yQGyoX+n/raNp17AQ7s0+FzUydPHQg==}
+    peerDependencies:
+      '@canva/error': ^2.0.0
 
   '@canva/design@2.14.0':
     resolution: {integrity: sha512-tzAAdgb2/IbWCcfuO1BJ4jj6iJ8fbperzcf0pBRG2nbo0OdqP8/1d1cL0yZrgiYVokwW7Jl6kN9ToJH2rFPNTw==}
@@ -2339,6 +2347,10 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - react-native
+
+  '@canva/asset@2.4.0(@canva/error@2.2.2)':
+    dependencies:
+      '@canva/error': 2.2.2
 
   '@canva/design@2.14.0(@canva/error@2.2.2)':
     dependencies:

@@ -240,3 +240,213 @@ export async function openExternalUrl(url) {
     return false;
   }
 }
+
+/**
+ * Decodes the Canva designId from a signed designToken JWT without verifying signature
+ * (used client-side to link exported PiProgram items back to their editable Canva design).
+ */
+export function decodeDesignIdFromToken(designToken) {
+  if (!designToken || typeof designToken !== "string") return null;
+  const parts = designToken.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const json = typeof atob === "function" ? atob(padded) : Buffer.from(padded, "base64").toString("utf8");
+    const payload = JSON.parse(json);
+    const id = payload?.designId || payload?.did || payload?.design_id || payload?.sub;
+    return typeof id === "string" && /^[a-zA-Z0-9_-]{3,64}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reads the current Canva design's ID via getDesignToken() when on the Design Editor surface.
+ */
+export async function getCurrentDesignId() {
+  if (!isRunningInCanva()) return "DAG_MOCK_DESIGN_1";
+  try {
+    const [{ getDesignToken }, { features }] = await Promise.all([
+      import("@canva/design"),
+      import("@canva/platform"),
+    ]);
+    if (!features.isSupported(getDesignToken)) return null;
+    const { token } = await getDesignToken();
+    return decodeDesignIdFromToken(token);
+  } catch {
+    return null;
+  }
+}
+
+let annoAppElementClient = null;
+let activeAnnoElement = null;
+
+async function getAnnoAppElementClient() {
+  if (annoAppElementClient) return annoAppElementClient;
+  const { initAppElement } = await import("@canva/design");
+  annoAppElementClient = initAppElement({
+    render: (data) => {
+      const lines = [];
+      const heading = [data.title, data.reference].filter(Boolean).join(" — ");
+      if (heading) {
+        lines.push({
+          type: "text",
+          children: [heading],
+          top: 0,
+          left: 0,
+          width: 680,
+          fontSize: 22,
+          fontWeight: "bold",
+        });
+      }
+      if (data.body) {
+        lines.push({
+          type: "text",
+          children: [data.body],
+          top: heading ? 36 : 0,
+          left: 0,
+          width: 680,
+          fontSize: 16,
+        });
+      }
+      return lines.length ? lines : [{ type: "text", children: [""], top: 0, left: 0, width: 400 }];
+    },
+  });
+  annoAppElementClient.registerOnElementChange((el) => {
+    activeAnnoElement = el ?? null;
+  });
+  return annoAppElementClient;
+}
+
+/**
+ * Inserts formatted liturgical text onto the current Canva page.
+ * When `autoUpdate` is true, creates a data-bound AppElement that can be updated in place when the date changes.
+ */
+export async function insertTextIntoDesign({ title = "", reference = "", body = "", autoUpdate = false, fieldKey = "", date = "" }) {
+  const heading = [title, reference].filter(Boolean).join(" — ");
+  const fullText = [heading, body].filter(Boolean).join("\n\n");
+  if (!fullText) return { status: "empty" };
+
+  if (!isRunningInCanva()) {
+    return { status: "simulated", mode: autoUpdate ? "app_element" : "richtext", text: fullText };
+  }
+
+  const [{ addElementAtPoint, addElementAtCursor, createRichtextRange }, { features }] = await Promise.all([
+    import("@canva/design"),
+    import("@canva/platform"),
+  ]);
+
+  if (autoUpdate) {
+    try {
+      const client = await getAnnoAppElementClient();
+      const payload = { fieldKey: String(fieldKey || "custom"), date: String(date || ""), title, reference, body };
+      if (activeAnnoElement) {
+        await activeAnnoElement.update({ data: payload });
+      } else {
+        await client.addElement({ data: payload });
+      }
+      return { status: "completed", mode: "app_element" };
+    } catch {
+      // Fallback to standard richtext if app elements are unsupported on this page type
+    }
+  }
+
+  const range = createRichtextRange();
+  if (heading) {
+    range.appendText(body ? `${heading}\n` : heading, { fontWeight: "bold" });
+  }
+  if (body) {
+    range.appendText(body);
+  }
+
+  if (features.isSupported(addElementAtPoint)) {
+    await addElementAtPoint({ type: "richtext", range });
+    return { status: "completed", mode: "richtext" };
+  }
+  if (features.isSupported(addElementAtCursor)) {
+    await addElementAtCursor({ type: "richtext", range });
+    return { status: "completed", mode: "richtext" };
+  }
+  return { status: "unsupported" };
+}
+
+/**
+ * Inserts a liturgical color swatch rectangle onto the current Canva page.
+ */
+export async function insertColorSwatchIntoDesign({ hex, label = "" }) {
+  const color = /^#[0-9a-f]{6}$/i.test(String(hex ?? "")) ? String(hex).toLowerCase() : "#7e003e";
+  if (!isRunningInCanva()) {
+    return { status: "simulated", color, label };
+  }
+  const [{ addElementAtPoint }, { features }] = await Promise.all([
+    import("@canva/design"),
+    import("@canva/platform"),
+  ]);
+  if (features.isSupported(addElementAtPoint)) {
+    await addElementAtPoint({
+      type: "shape",
+      paths: [{ d: "M 0 0 L 200 0 L 200 80 L 0 80 Z", fill: { color } }],
+      viewBox: { top: 0, left: 0, width: 200, height: 80 },
+      width: 200,
+      height: 80,
+    });
+    return { status: "completed", color };
+  }
+  return { status: "unsupported" };
+}
+
+/**
+ * Runs Canva Autofill on the current design using an Anno DataTable.
+ */
+export async function autofillDesignWithAnnoTable(dataTable) {
+  if (!isRunningInCanva()) {
+    return { status: "simulated" };
+  }
+  const [{ autofillDesign }, { features }] = await Promise.all([
+    import("@canva/design"),
+    import("@canva/platform"),
+  ]);
+  if (!features.isSupported(autofillDesign)) {
+    return { status: "unsupported" };
+  }
+  return autofillDesign({ dataTable });
+}
+
+/**
+ * Imports an external image URL (e.g. a PiProgram slide) onto the current Canva page.
+ */
+export async function importImageUrlIntoDesign({ url, title = "PiProgram slide", mimeType = "image/png" }) {
+  if (!isRunningInCanva()) {
+    return { status: "simulated", url, title };
+  }
+  const [{ upload }, { addElementAtPoint, addElementAtCursor }, { features }] = await Promise.all([
+    import("@canva/asset"),
+    import("@canva/design"),
+    import("@canva/platform"),
+  ]);
+  const uploaded = await upload({
+    type: "image",
+    mimeType: mimeType === "image/jpeg" ? "image/jpeg" : "image/png",
+    url,
+    thumbnailUrl: url,
+    aiDisclosure: "none",
+  });
+  if (features.isSupported(addElementAtPoint)) {
+    await addElementAtPoint({
+      type: "image",
+      ref: uploaded.ref,
+      altText: { text: title, decorative: false },
+    });
+    return { status: "completed" };
+  }
+  if (features.isSupported(addElementAtCursor)) {
+    await addElementAtCursor({
+      type: "image",
+      ref: uploaded.ref,
+      altText: { text: title, decorative: false },
+    });
+    return { status: "completed" };
+  }
+  return { status: "unsupported" };
+}

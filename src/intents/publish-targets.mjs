@@ -153,6 +153,8 @@ export function buildPushPayload(settings, pages) {
     target: targetId,
     ...(target && target.id !== "piprogram" ? { orientation: target.orientation === "vertical" ? "portrait" : "landscape" } : {}),
     ...(from ? { useAt: from === to ? from : `${from}/${to}` } : {}),
+    ...(settings.designId ? { designId: settings.designId } : {}),
+    ...(settings.overwriteItemId ? { itemId: settings.overwriteItemId } : {}),
     pages,
   };
 }

@@ -19,6 +19,10 @@ export type PublishSettingsData = {
   usage?: { from?: string; to?: string };
   /** Confirmed: no use date, the slides are a permanent asset. */
   permanent?: boolean;
+  /** Real Canva designId extracted from designToken JWT. */
+  designId?: string;
+  /** Optional PiProgram itemId to overwrite in place. */
+  overwriteItemId?: string;
   signage?: SignageSettings;
   graphics?: { movement?: string };
   goLive?: GoLiveSettings;
@@ -35,7 +39,7 @@ export function decodePublishRef(publishRef: string | undefined): PublishSetting
 export function buildPushPayload(
   settings: PublishSettingsData,
   pages: { url: string; pageNumber: number; name?: string }[],
-): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt?: string; pages: { url: string; pageNumber: number; name?: string }[] };
+): { title: string; target: string; orientation?: "landscape" | "portrait"; useAt?: string; designId?: string; itemId?: string; pages: { url: string; pageNumber: number; name?: string }[] };
 
 export type SignageSettings = {
   screenId: string;

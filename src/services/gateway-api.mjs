@@ -47,7 +47,8 @@ async function getHeaders() {
  * Helper to execute a fetch request with timeout.
  */
 async function apiRequest(path, options = {}) {
-  const url = `${CONFIG.gatewayUrl}${path}`;
+  const base = options.baseUrl ? String(options.baseUrl).replace(/\/+$/, "") : CONFIG.gatewayUrl;
+  const url = `${base}${path}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 10000);
 
@@ -117,15 +118,63 @@ export function parseUseAt(text) {
   return items.length === 1 ? items[0] : items;
 }
 
+const OVERWRITE_TARGET_KEY = "canva-pieco-app.overwrite-target";
+
+let memoryOverwriteTarget = null;
+
+export function getOverwriteTarget() {
+  try {
+    const raw = globalThis.localStorage?.getItem(OVERWRITE_TARGET_KEY);
+    if (!raw) return memoryOverwriteTarget;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && parsed.itemId ? parsed : memoryOverwriteTarget;
+  } catch {
+    return memoryOverwriteTarget;
+  }
+}
+
+export function setOverwriteTarget(target) {
+  try {
+    if (!target || !target.itemId) {
+      memoryOverwriteTarget = null;
+      globalThis.localStorage?.removeItem(OVERWRITE_TARGET_KEY);
+      return;
+    }
+    memoryOverwriteTarget = target;
+    globalThis.localStorage?.setItem(OVERWRITE_TARGET_KEY, JSON.stringify(target));
+  } catch {
+    memoryOverwriteTarget = target && target.itemId ? target : null;
+  }
+}
+
+export function clearOverwriteTarget() {
+  memoryOverwriteTarget = null;
+  try {
+    globalThis.localStorage?.removeItem(OVERWRITE_TARGET_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Step 1: Push exported slides to Pi Gateway. The gateway answers 202 with a task: it downloads
  * the pages, Pi Program unpacks them and makes step pictures and thumbnails. Follow it with
  * waitForTask() until `ready`.
  */
-export async function pushContent({ title, pages, useAt = null, target = null, orientation = null }) {
+export async function pushContent({
+  title,
+  pages,
+  useAt = null,
+  target = null,
+  orientation = null,
+  designId = null,
+  itemId = null,
+  gatewayUrl = null,
+}) {
   try {
     return await apiRequest("/api/v1/canva/push", {
       method: "POST",
+      baseUrl: gatewayUrl,
       body: JSON.stringify({
         title,
         pages: pages.map((p) => ({
@@ -136,6 +185,8 @@ export async function pushContent({ title, pages, useAt = null, target = null, o
         ...(useAt ? { useAt } : {}),
         ...(target ? { target } : {}),
         ...(orientation ? { orientation } : {}),
+        ...(designId ? { designId } : {}),
+        ...(itemId ? { itemId } : {}),
       }),
     });
   } catch (err) {
@@ -433,6 +484,75 @@ export async function getGatewayStatus(pipelineId = "pipgm1") {
     }
     throw err;
   }
+}
+
+function buildDevMockLibraryItems() {
+  return [
+    {
+      id: "canva_mock_1",
+      title: "Messu 2026-11-29 (Ensimmäinen adventti)",
+      kind: "canva",
+      useAt: ["2026-11-29"],
+      createdAt: "2026-11-20T10:00:00Z",
+      steps: [{ step: 0, title: "Alkuvirsi" }, { step: 1, title: "Päivän rukous" }, { step: 2, title: "Saarnavirsi" }],
+      canva: {
+        designId: "DAG_MOCK_DESIGN_1",
+        mode: "exported_slides",
+        pageCount: 3,
+        pages: [
+          { pageNumber: 1, title: "Alkuvirsi", assetUrl: "/api/v1/pipgm/assets/mock1" },
+          { pageNumber: 2, title: "Päivän rukous", assetUrl: "/api/v1/pipgm/assets/mock2" },
+          { pageNumber: 3, title: "Saarnavirsi", assetUrl: "/api/v1/pipgm/assets/mock3" },
+        ],
+      },
+    },
+    {
+      id: "media_mock_2",
+      title: "Keskuskirkko talvella (Taustakuva)",
+      kind: "media",
+      useAt: [],
+      createdAt: "2026-11-15T12:00:00Z",
+      steps: [{ step: 0, title: "Kuva" }],
+      media: { kind: "image", mimeType: "image/png" },
+    },
+    {
+      id: "hymn_mock_3",
+      title: "Virsi 001 — Hoosianna",
+      kind: "hymn",
+      useAt: ["2026-11-29"],
+      createdAt: "2026-11-01T08:00:00Z",
+      steps: [{ step: 0 }, { step: 1 }],
+    },
+  ];
+}
+
+/**
+ * Lists items in PiProgram storage (via Pi Gateway /api/v1/canva/library or fallback /api/v1/pipgm/items).
+ */
+export async function listPiProgramItems({ gatewayUrl = null, signal = undefined } = {}) {
+  try {
+    const res = await apiRequest("/api/v1/canva/library", { baseUrl: gatewayUrl, signal, timeoutMs: 6000 });
+    const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+    return items;
+  } catch (err) {
+    if (CONFIG.isDev && err?.status !== 401 && err?.status !== 403) {
+      return buildDevMockLibraryItems();
+    }
+    throw err;
+  }
+}
+
+/**
+ * Returns the URL for an item's original-resolution page image.
+ */
+export function getPiProgramOriginalAssetUrl(item, pageNumber = 1, { gatewayUrl = CONFIG.gatewayUrl } = {}) {
+  const base = String(gatewayUrl || CONFIG.gatewayUrl).replace(/\/+$/, "");
+  const canvaPages = item?.canva?.pages;
+  if (Array.isArray(canvaPages) && canvaPages[pageNumber - 1]?.assetUrl) {
+    const rel = canvaPages[pageNumber - 1].assetUrl;
+    return /^https?:\/\//i.test(rel) ? rel : `${base}${rel}`;
+  }
+  return `${base}/api/v1/pipgm/items/${encodeURIComponent(item?.id ?? "")}/steps/${pageNumber - 1}/image.png`;
 }
 
 const PI_INPUT = { pi1: 3, pi2: 4 };

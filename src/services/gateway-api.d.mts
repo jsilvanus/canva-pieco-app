@@ -18,7 +18,58 @@ export class GatewayError extends Error {}
 export function setFetchImpl(fn: typeof fetch): void;
 export function resetFetchImpl(): void;
 export function parseUseAt(text: string): string | string[] | null;
-export function pushContent(args: { title: string; pages: PageRef[]; useAt?: string | string[] | null; target?: string | null; orientation?: "landscape" | "portrait" | null }): Promise<Task>;
+export function pushContent(args: {
+  title: string;
+  pages: PageRef[];
+  useAt?: string | string[] | null;
+  target?: string | null;
+  orientation?: "landscape" | "portrait" | null;
+  designId?: string | null;
+  itemId?: string | null;
+  gatewayUrl?: string | null;
+}): Promise<Task>;
+
+export type OverwriteTarget = {
+  itemId: string;
+  title: string;
+  designId?: string;
+  gatewayUrl?: string;
+  useAt?: string | string[] | null;
+};
+
+export function getOverwriteTarget(): OverwriteTarget | null;
+export function setOverwriteTarget(target: OverwriteTarget | null): void;
+export function clearOverwriteTarget(): void;
+
+export type PiProgramItem = {
+  id: string;
+  title: string;
+  kind: string;
+  useAt?: string[];
+  createdAt?: string;
+  steps?: Array<{ step: number; title?: string; imageUrl?: string; thumbnailUrl?: string }>;
+  canva?: {
+    designId?: string;
+    mode?: string;
+    pageCount?: number;
+    pages?: Array<{ pageNumber: number; title?: string; assetUrl?: string; assetId?: string }>;
+  };
+  media?: {
+    kind?: "image" | "video" | "audio";
+    mimeType?: string;
+  };
+};
+
+export function listPiProgramItems(opts?: {
+  gatewayUrl?: string | null;
+  signal?: AbortSignal;
+}): Promise<PiProgramItem[]>;
+
+export function getPiProgramOriginalAssetUrl(
+  item: PiProgramItem,
+  pageNumber?: number,
+  opts?: { gatewayUrl?: string },
+): string;
 export function getTask(taskId: string): Promise<Task>;
 export function waitForTask(
   taskId: string,

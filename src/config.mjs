@@ -41,7 +41,7 @@ export function normalizeGatewayUrl(value) {
  * stored; an empty string removes it; anything else must pass normalizeGatewayUrl (https only, a
  * path prefix such as https://host/signage is kept). `signagePushKey` follows the same rule.
  */
-export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey }) {
+export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey, annoUrl, valopankkiUrl, piDiscoveryUrl }) {
   const url = normalizeGatewayUrl(gatewayUrl);
   if (!url) throw new Error("The gateway address must be an https address, for example https://gateway.example.org");
   const previous = readStored();
@@ -51,6 +51,19 @@ export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, sig
   if (signage) next.signageUrl = signage;
   const key = signagePushKey === undefined ? previous.signagePushKey : String(signagePushKey ?? "").trim();
   if (signage && typeof key === "string" && key) next.signagePushKey = key;
+
+  const anno = annoUrl === undefined ? previous.annoUrl : String(annoUrl ?? "").trim() ? normalizeGatewayUrl(annoUrl) : "";
+  if (anno === null) throw new Error("The Anno address must be an https address, for example https://kehitys.riihimaenseurakunta.fi/vuosi");
+  if (anno) next.annoUrl = anno;
+
+  const valopankki = valopankkiUrl === undefined ? previous.valopankkiUrl : String(valopankkiUrl ?? "").trim() ? normalizeGatewayUrl(valopankkiUrl) : "";
+  if (valopankki === null) throw new Error("The Valopankki address must be an https address");
+  if (valopankki) next.valopankkiUrl = valopankki;
+
+  const discovery = piDiscoveryUrl === undefined ? previous.piDiscoveryUrl : String(piDiscoveryUrl ?? "").trim() ? normalizeGatewayUrl(piDiscoveryUrl) : "";
+  if (discovery === null) throw new Error("The Pi Discovery address must be an https address");
+  if (discovery) next.piDiscoveryUrl = discovery;
+
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
@@ -75,6 +88,22 @@ export const CONFIG = Object.freeze({
   /** Base address of the Sissi signage service including any path prefix, or "" when not set (VITE_SIGNAGE_URL or Settings). */
   get signageUrl() {
     return normalizeGatewayUrl(readStored().signageUrl) || normalizeGatewayUrl(env.VITE_SIGNAGE_URL) || "";
+  },
+  /** Base address of the Anno church year API (VITE_ANNO_URL or Settings). */
+  get annoUrl() {
+    return normalizeGatewayUrl(readStored().annoUrl) || normalizeGatewayUrl(env.VITE_ANNO_URL) || "https://kehitys.riihimaenseurakunta.fi/vuosi";
+  },
+  /** Base address of the Tunnus identity provider (VITE_TUNNUS_URL or default VPS staging URL). */
+  get tunnusUrl() {
+    return normalizeGatewayUrl(readStored().tunnusUrl) || normalizeGatewayUrl(env.VITE_TUNNUS_URL) || "https://kehitys.riihimaenseurakunta.fi/identity";
+  },
+  /** Optional Valopankki media library base URL (VITE_VALOPANKKI_URL or Settings). */
+  get valopankkiUrl() {
+    return normalizeGatewayUrl(readStored().valopankkiUrl) || normalizeGatewayUrl(env.VITE_VALOPANKKI_URL) || "";
+  },
+  /** Pi Discovery endpoint (defaults to Tunnus, or custom VITE_PI_DISCOVERY_URL / Settings). */
+  get piDiscoveryUrl() {
+    return normalizeGatewayUrl(readStored().piDiscoveryUrl) || normalizeGatewayUrl(env.VITE_PI_DISCOVERY_URL) || this.tunnusUrl;
   },
   /** Optional push key for use outside Canva; never baked into the bundle (build:js clears VITE_SIGNAGE_PUSH_KEY). */
   get signagePushKey() {

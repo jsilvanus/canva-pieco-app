@@ -7,8 +7,10 @@ import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
 import { loadAccount, signIn, signOut } from "../../services/auth.mjs";
 import type { Account } from "../../services/auth.mjs";
-import { readCachedDesignPageText, readDesignPageText } from "../../services/canva-sdk.mjs";
+import { decodeDesignIdFromToken, readCachedDesignPageText, readDesignPageText } from "../../services/canva-sdk.mjs";
 import type { DesignPageText } from "../../services/canva-sdk.mjs";
+import { clearOverwriteTarget, getOverwriteTarget } from "../../services/gateway-api.mjs";
+import type { OverwriteTarget } from "../../services/gateway-api.mjs";
 import { listScreens, listViews } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
@@ -25,7 +27,6 @@ import {
   screenListFailed,
   screenListInitialState,
   screenListLoaded,
-  subscribeDraftSecondsByPage,
 } from "./signage-publisher.mjs";
 import type { ScreenListState } from "./signage-publisher.mjs";
 import { TargetSummary } from "./target_summary";
@@ -50,6 +51,20 @@ function extractSelectionTitle(outputType: OutputType | undefined): string {
   return "";
 }
 
+function extractSelectionDesignId(outputType: OutputType | undefined): string {
+  for (const slot of outputType?.mediaSlots ?? []) {
+    for (const sel of slot.selection ?? []) {
+      for (const meta of sel.selectionMetadata ?? []) {
+        if (meta.type === "design" && typeof meta.designToken === "string") {
+          const did = decodeDesignIdFromToken(meta.designToken);
+          if (did) return did;
+        }
+      }
+    }
+  }
+  return "";
+}
+
 /**
  * Publish settings: a name and either signage options (screen, enable now, seconds) or the date /
  * permanent-asset fields for the Pi targets.
@@ -67,6 +82,8 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [designTitle, setDesignTitle] = useState<string>(() => extractSelectionTitle(invocationContext.outputType));
+  const [designId, setDesignId] = useState<string>(() => extractSelectionDesignId(invocationContext.outputType));
+  const [overwriteTarget, setOverwriteTargetState] = useState<OverwriteTarget | null>(() => getOverwriteTarget());
   const [designPageText, setDesignPageText] = useState<DesignPageText | null>(() => readCachedDesignPageText());
 
   const signageUrl = CONFIG.signageUrl;
@@ -136,9 +153,12 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           if (context.reason === "publish_settings") {
             const nextTitle = extractSelectionTitle(context.outputType);
             if (nextTitle) setDesignTitle(nextTitle);
+            const nextDid = extractSelectionDesignId(context.outputType);
+            if (nextDid) setDesignId(nextDid);
             setSettings((prev) => ({
               ...prev,
               targetId: context.outputType.id,
+              ...(nextDid ? { designId: nextDid } : {}),
               signage: prev.targetId !== context.outputType.id && prev.signage
                 ? { ...prev.signage, screenId: "" }
                 : prev.signage,
@@ -156,11 +176,17 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   );
 
   useEffect(() => {
-    if (!isSignage) return;
-    return subscribeDraftSecondsByPage((secondsByPage) => {
-      setSettings((prev) => mergeSignageSettings(prev, { secondsByPage }));
-    });
-  }, [isSignage]);
+    if (settings.targetId === "piprogram" && overwriteTarget) {
+      setSettings((prev) => ({
+        ...prev,
+        overwriteItemId: overwriteTarget.itemId,
+        ...(designId ? { designId } : overwriteTarget.designId ? { designId: overwriteTarget.designId } : {}),
+        name: prev.name || overwriteTarget.title,
+      }));
+    } else if (designId && !settings.designId) {
+      setSettings((prev) => ({ ...prev, designId }));
+    }
+  }, [settings.targetId, overwriteTarget, designId, settings.designId]);
 
   const { validityState, errors } = validatePublishSettings(settings, { signageUrl });
   const effectiveValidity =
@@ -303,6 +329,36 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
       {target && !target.enabled && (
         <Alert tone="warn">
           {intl.formatMessage({ defaultMessage: "This target is not available yet. Choose another one.", description: "Shown when a disabled target is chosen" })}
+        </Alert>
+      )}
+
+      {target?.id === "piprogram" && overwriteTarget && (
+        <Alert tone="warn">
+          <Rows spacing="0.5u">
+            <Text size="small">
+              <strong>
+                {intl.formatMessage(
+                  { defaultMessage: "Overwriting existing PiProgram item: {title}", description: "Alert when overwriting existing item" },
+                  { title: overwriteTarget.title },
+                )}
+              </strong>
+            </Text>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => {
+                clearOverwriteTarget();
+                setOverwriteTargetState(null);
+                setSettings((prev) => {
+                  const next = { ...prev };
+                  delete next.overwriteItemId;
+                  return next;
+                });
+              }}
+            >
+              {intl.formatMessage({ defaultMessage: "Publish as new item instead", description: "Button to clear overwrite" })}
+            </Button>
+          </Rows>
         </Alert>
       )}
 

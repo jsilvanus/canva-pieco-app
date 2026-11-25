@@ -10,11 +10,14 @@ export function SettingsForm({ onClose, onSaved }: { onClose?: () => void; onSav
   const [gatewayApiKey, setGatewayApiKey] = useState(CONFIG.gatewayApiKey);
   const [signageUrl, setSignageUrl] = useState(CONFIG.signageUrl);
   const [signagePushKey, setSignagePushKey] = useState(CONFIG.signagePushKey);
+  const [annoUrl, setAnnoUrl] = useState(CONFIG.annoUrl);
+  const [valopankkiUrl, setValopankkiUrl] = useState(CONFIG.valopankkiUrl);
+  const [piDiscoveryUrl, setPiDiscoveryUrl] = useState(CONFIG.piDiscoveryUrl);
   const [error, setError] = useState("");
 
   const save = () => {
     try {
-      saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey });
+      saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey, annoUrl, valopankkiUrl, piDiscoveryUrl });
       setError("");
       onSaved();
     } catch (err) {
@@ -59,6 +62,24 @@ export function SettingsForm({ onClose, onSaved }: { onClose?: () => void; onSav
         })}
         value={signagePushKey}
         control={(props) => <TextInput {...props} onChange={setSignagePushKey} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Church year API (Anno)", description: "Label of the Anno API URL field" })}
+        labelMarker="optional"
+        value={annoUrl}
+        control={(props) => <TextInput {...props} type="url" onChange={setAnnoUrl} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Valopankki address (https)", description: "Label of the Valopankki media library URL field" })}
+        labelMarker="optional"
+        value={valopankkiUrl}
+        control={(props) => <TextInput {...props} type="url" onChange={setValopankkiUrl} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Pi Discovery API (https)", description: "Label of the Pi Discovery API URL field" })}
+        labelMarker="optional"
+        value={piDiscoveryUrl}
+        control={(props) => <TextInput {...props} type="url" onChange={setPiDiscoveryUrl} />}
       />
       <Columns spacing="1u">
         <Column>

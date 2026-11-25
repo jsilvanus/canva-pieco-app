@@ -18,3 +18,16 @@ export function exportDesignPages(): Promise<{
   exportBlobs: { url: string; pageNumber: number; name?: string }[];
 }>;
 export function openExternalUrl(url: string): Promise<boolean>;
+export function decodeDesignIdFromToken(designToken: string | undefined | null): string | null;
+export function getCurrentDesignId(): Promise<string | null>;
+export function insertTextIntoDesign(opts: {
+  title?: string;
+  reference?: string;
+  body?: string;
+  autoUpdate?: boolean;
+  fieldKey?: string;
+  date?: string;
+}): Promise<{ status: string; mode?: string; text?: string }>;
+export function insertColorSwatchIntoDesign(opts: { hex: string; label?: string }): Promise<{ status: string; color?: string }>;
+export function autofillDesignWithAnnoTable(dataTable: unknown): Promise<{ status: string }>;
+export function importImageUrlIntoDesign(opts: { url: string; title?: string; mimeType?: string }): Promise<{ status: string }>;
