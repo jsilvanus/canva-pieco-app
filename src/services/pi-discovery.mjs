@@ -196,6 +196,81 @@ export function resolveExportTargetAuth(target, service) {
 }
 
 /**
+ * Discovers Valopankki media library instances from Tunnus discovery or local configuration.
+ * Supports multiple parish archives/libraries in the same collection.
+ *
+ * @param {Object} [options]
+ * @param {string} [options.discoveryUrl]
+ * @param {typeof fetch} [options.fetch]
+ * @param {AbortSignal} [options.signal]
+ */
+export async function listValopankkiInstances({
+  discoveryUrl = CONFIG.piDiscoveryUrl || CONFIG.tunnusUrl,
+  fetch: fetchFn = globalThis.fetch,
+  signal,
+} = {}) {
+  const defaultBank = {
+    id: "primary",
+    name: "Riihimäen seurakunta (Päävalopankki)",
+    url: CONFIG.valopankkiUrl || "https://kehitys.riihimaenseurakunta.fi/valopankki",
+    endpoint_url: CONFIG.valopankkiUrl || "https://kehitys.riihimaenseurakunta.fi/valopankki",
+    venue: "parish-wide",
+    source: "configured",
+  };
+  const banks = [defaultBank];
+  const normalizedDiscovery = normalizeGatewayUrl(discoveryUrl);
+  if (!normalizedDiscovery || typeof fetchFn !== "function") {
+    return banks;
+  }
+
+  try {
+    const token = await getBearerToken().catch(() => null);
+    const headers = { Accept: "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetchFn(`${normalizedDiscovery}/api/v1/discovery?type=valopankki`, {
+      method: "GET",
+      headers,
+      signal,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const services = Array.isArray(data?.services)
+        ? data.services
+        : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data)
+        ? data
+        : [];
+
+      const seenUrls = new Set([normalizeGatewayUrl(defaultBank.url)]);
+      for (const s of services) {
+        if (!s || typeof s !== "object") continue;
+        const rawUrl = s.endpoint_url || s.url;
+        const norm = normalizeGatewayUrl(rawUrl);
+        if (!norm || seenUrls.has(norm)) continue;
+        seenUrls.add(norm);
+
+        banks.push({
+          id: String(s.id || norm),
+          name: String(s.name || s.id || "Valopankki"),
+          url: norm,
+          endpoint_url: norm,
+          venue: typeof s.venue === "string" ? s.venue : undefined,
+          source: "discovered",
+          auth: s.auth && typeof s.auth === "object" ? s.auth : undefined,
+          metadata: s.metadata && typeof s.metadata === "object" ? s.metadata : undefined,
+        });
+      }
+    }
+  } catch {
+    // Return configured fallback
+  }
+
+  return banks;
+}
+
+/**
  * Discovers export targets across all active parish services registered in Tunnus.
  * Parses the flattened `metadata.export_targets` list and applies URL resolution and auth inheritance.
  *

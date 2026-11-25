@@ -207,7 +207,7 @@ export function App() {
                 },
                 {
                   value: "piprogram",
-                  label: intl.formatMessage({ defaultMessage: "PiProgram", description: "PiProgram items and decks collection" }),
+                  label: intl.formatMessage({ defaultMessage: "Pi Ecosystem", description: "Pi Ecosystem items, decks, and venues collection" }),
                 },
                 {
                   value: "valopankki",

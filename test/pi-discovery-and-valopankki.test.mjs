@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   listPiSystems,
+  listValopankkiInstances,
   resolveExportTargetIngestUrl,
   resolveExportTargetAuth,
   listDiscoveredExportTargets,
@@ -443,4 +444,44 @@ test("detailed tracked assets support metadata, removal, and canvas inspection",
   const inspection = await inspectCurrentDesignElements();
   assert.equal(inspection.supported, true);
   assert.equal(inspection.imageCount, 1);
+});
+
+test("listValopankkiInstances discovers multiple Valopankki repositories", async () => {
+  const mockDiscovery = {
+    services: [
+      {
+        id: "riihimaki-valopankki",
+        name: "Riihimäen seurakunta (Päävalopankki)",
+        type: "valopankki",
+        venue: "parish-wide",
+        endpoint_url: "https://valopankki.riihimaenseurakunta.fi",
+        url: "https://valopankki.riihimaenseurakunta.fi",
+      },
+      {
+        id: "nuorisotila-valopankki",
+        name: "Nuorisotyön kuva-arkisto",
+        type: "valopankki",
+        venue: "nuorisotila",
+        endpoint_url: "https://nuoriso.valopankki.riihimaenseurakunta.fi",
+        url: "https://nuoriso.valopankki.riihimaenseurakunta.fi",
+      },
+    ],
+  };
+
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => mockDiscovery,
+  });
+
+  const instances = await listValopankkiInstances({
+    discoveryUrl: "https://tunnus.riihimaenseurakunta.fi",
+    fetch: mockFetch,
+  });
+
+  assert.ok(instances.length >= 2);
+  assert.equal(instances[0].id, "primary");
+  assert.equal(instances[1].id, "riihimaki-valopankki");
+  assert.equal(instances[2].id, "nuorisotila-valopankki");
+  assert.equal(instances[2].venue, "nuorisotila");
 });

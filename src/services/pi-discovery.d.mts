@@ -73,6 +73,23 @@ export interface DiscoveredExportTarget {
   };
 }
 
+export interface ValopankkiInstance {
+  id: string;
+  name: string;
+  url: string;
+  endpoint_url: string;
+  venue?: string;
+  source: 'configured' | 'discovered';
+  auth?: ServiceAuth;
+  metadata?: Record<string, unknown>;
+}
+
+export function listValopankkiInstances(options?: {
+  discoveryUrl?: string;
+  fetch?: typeof fetch;
+  signal?: AbortSignal;
+}): Promise<ValopankkiInstance[]>;
+
 export function resolveExportTargetIngestUrl(target: unknown, service: unknown): string;
 export function resolveExportTargetAuth(target: unknown, service: unknown): ServiceAuth;
 

@@ -23,6 +23,8 @@ import {
   inspectCurrentDesignElements,
   insertColorSwatchIntoDesign,
 } from "../services/canva-sdk.mjs";
+import { listValopankkiInstances } from "../services/pi-discovery.mjs";
+import type { ValopankkiInstance } from "../services/pi-discovery.d.mts";
 import {
   clearAssetsUsedInDesign,
   getTrackedDesignAssets,
@@ -85,11 +87,27 @@ export function ValopankkiView({ notify }: Props) {
   const [inspectingCanvas, setInspectingCanvas] = useState<boolean>(false);
   const [lastReported, setLastReported] = useState<{ count: number; target: string; time: string } | null>(null);
 
-  // Load Brand Kit
+  // Multi-Valopankki discovery
+  const [instances, setInstances] = useState<ValopankkiInstance[]>([]);
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string>("primary");
+
+  useEffect(() => {
+    void listValopankkiInstances().then((list) => {
+      setInstances(list);
+      if (list.length > 0 && !list.some((i) => i.id === selectedInstanceId)) {
+        setSelectedInstanceId(list[0].id);
+      }
+    });
+  }, [selectedInstanceId]);
+
+  const activeInstance = instances.find((i) => i.id === selectedInstanceId) || instances[0];
+  const activeValopankkiUrl = activeInstance?.endpoint_url || activeInstance?.url || CONFIG.valopankkiUrl;
+
+  // Load Brand Kit for active Valopankki
   useEffect(() => {
     let active = true;
     setLoadingBrand(true);
-    void getValopankkiBrandKit()
+    void getValopankkiBrandKit({ valopankkiUrl: activeValopankkiUrl })
       .then((kit) => {
         if (active) setBrandKit(kit);
       })
@@ -102,9 +120,9 @@ export function ValopankkiView({ notify }: Props) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeValopankkiUrl]);
 
-  // Search Assets
+  // Search Assets for active Valopankki
   const performSearch = useCallback(async () => {
     setLoadingAssets(true);
     try {
@@ -112,6 +130,7 @@ export function ValopankkiView({ notify }: Props) {
         search,
         kind: kindFilter,
         limit: 24,
+        valopankkiUrl: activeValopankkiUrl,
       });
       setAssets(res.items);
     } catch {
@@ -119,7 +138,7 @@ export function ValopankkiView({ notify }: Props) {
     } finally {
       setLoadingAssets(false);
     }
-  }, [search, kindFilter]);
+  }, [search, kindFilter, activeValopankkiUrl]);
 
   useEffect(() => {
     if (tab === "assets") {
@@ -217,12 +236,15 @@ export function ValopankkiView({ notify }: Props) {
 
     setReportingUsage(true);
     try {
-      const res = await reportValopankkiExport({
-        canvaDesignId: currentDesignId,
-        canvaDesignTitle: [currentDesignTitle, usageNotes].filter(Boolean).join(" — ") || undefined,
-        exportTarget,
-        assetIds: selectedAssetIds,
-      });
+      const res = await reportValopankkiExport(
+        {
+          canvaDesignId: currentDesignId,
+          canvaDesignTitle: [currentDesignTitle, usageNotes].filter(Boolean).join(" — ") || undefined,
+          exportTarget,
+          assetIds: selectedAssetIds,
+        },
+        { valopankkiUrl: activeValopankkiUrl }
+      );
 
       const count = res.recorded || selectedAssetIds.length;
       setLastReported({
@@ -267,7 +289,11 @@ export function ValopankkiView({ notify }: Props) {
     setInsertingId(asset.id);
     try {
       const designId = await getCurrentDesignId();
-      await insertValopankkiAssetIntoDesign(asset, { designId: designId || undefined, title: asset.title });
+      await insertValopankkiAssetIntoDesign(
+        asset,
+        { designId: designId || undefined, title: asset.title },
+        { valopankkiUrl: activeValopankkiUrl }
+      );
       notify(
         intl.formatMessage({
           defaultMessage: "Added to design.",
@@ -313,6 +339,34 @@ export function ValopankkiView({ notify }: Props) {
           </Text>
         </Rows>
       </Box>
+
+      {/* Multiple Valopankki instances selector */}
+      {instances.length > 1 && (
+        <FormField
+          label={intl.formatMessage({
+            defaultMessage: "Valopankki media repository",
+            description: "Select active Valopankki repository",
+          })}
+          value={selectedInstanceId}
+          control={(props) => (
+            <Select
+              {...props}
+              stretch
+              value={selectedInstanceId}
+              onChange={setSelectedInstanceId}
+              options={instances.map((inst) => ({
+                value: inst.id,
+                label: inst.venue
+                  ? intl.formatMessage(
+                      { defaultMessage: "{name} ({venue})", description: "Valopankki instance option with venue" },
+                      { name: inst.name, venue: inst.venue }
+                    )
+                  : inst.name,
+              }))}
+            />
+          )}
+        />
+      )}
 
       <SegmentedControl
         value={tab}

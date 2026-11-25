@@ -20,6 +20,8 @@ import {
   getOverwriteTarget,
   getPiProgramOriginalAssetUrl,
   listPiProgramItems,
+  pushCanvaGraphic,
+  setCanvaGraphicOffAir,
   setOverwriteTarget,
 } from "../services/gateway-api.mjs";
 import type { OverwriteTarget, PiProgramItem } from "../services/gateway-api.mjs";
@@ -64,6 +66,12 @@ export function PiProgramLibraryView({
   const [_pipelineId, setPipelineId] = useState<string>("pipgm1");
   const [currentDesignId, setCurrentDesignId] = useState<string | null>(null);
 
+  // Expanded item details and ATEM broadcast controls
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [itemAtemMovement, setItemAtemMovement] = useState<Record<string, string>>({});
+  const [itemAtemAutoHide, setItemAtemAutoHide] = useState<Record<string, number>>({});
+  const [airingItemId, setAiringItemId] = useState<string | null>(null);
+
   // Discover Pi systems (supports multiple PiProgram systems populated via Tunnus)
   useEffect(() => {
     void listPiSystems().then((sys) => {
@@ -102,7 +110,13 @@ export function PiProgramLibraryView({
   const filteredItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return items.filter((item) => {
-      if (filterType !== "all" && item.kind !== filterType) return false;
+      if (filterType !== "all") {
+        if (filterType === "graphic") {
+          if (item.kind !== "graphic" && item.kind !== "atem") return false;
+        } else if (item.kind !== filterType) {
+          return false;
+        }
+      }
       if (!q) return true;
       return (
         item.title?.toLowerCase().includes(q) ||
@@ -185,8 +199,71 @@ export function PiProgramLibraryView({
     void openExternalUrl(url);
   };
 
+  const handleTakeOnAir = async (item: PiProgramItem) => {
+    const isGraphic = item.kind === "graphic" || item.kind === "atem";
+    const movement = itemAtemMovement[item.id] || (isGraphic ? "fly-bottom" : "cut");
+    const autoHideMs = itemAtemAutoHide[item.id] ?? 7000;
+    const url = getPiProgramOriginalAssetUrl(item, 1, { gatewayUrl: activeSystem.gatewayUrl });
+    setAiringItemId(item.id);
+    try {
+      await pushCanvaGraphic({
+        title: item.title,
+        imageUrl: url,
+        movement,
+        autoHideMs,
+        keyer: "usk",
+        slot: 7,
+      });
+      notify(
+        intl.formatMessage(
+          { defaultMessage: "Put \"{title}\" on air with {anim} animation.", description: "Notice when taking graphic on air" },
+          { title: item.title, anim: movement }
+        ),
+        "positive"
+      );
+    } catch (err) {
+      notify(err instanceof Error ? err.message : String(err), "critical");
+    } finally {
+      setAiringItemId(null);
+    }
+  };
+
+  const handleTakeOffAir = async () => {
+    try {
+      await setCanvaGraphicOffAir({ keyer: "usk", index: 1 });
+      notify(intl.formatMessage({ defaultMessage: "Took graphics off air.", description: "Notice when off air" }), "info");
+    } catch (err) {
+      notify(err instanceof Error ? err.message : String(err), "critical");
+    }
+  };
+
   return (
     <Rows spacing="2u">
+      {/* Header Banner */}
+      <Box padding="1.5u" background="neutralSubtle">
+        <Rows spacing="1u">
+          <Columns spacing="1u" alignY="center">
+            <Column>
+              <Title size="small">
+                {intl.formatMessage({ defaultMessage: "Pi Ecosystem", description: "Pi Ecosystem header" })}
+              </Title>
+            </Column>
+            <Column width="content">
+              <Badge
+                tone="positive"
+                text={activeSystem.venue ? activeSystem.venue.toUpperCase() : intl.formatMessage({ defaultMessage: "Connected", description: "Connected status" })}
+              />
+            </Column>
+          </Columns>
+          <Text size="small" tone="secondary">
+            {intl.formatMessage({
+              defaultMessage: "Parish venues, screen decks, and ATEM broadcast graphics managed via Pi Ecosystem.",
+              description: "Pi Ecosystem description",
+            })}
+          </Text>
+        </Rows>
+      </Box>
+
       {/* Multi-Pi System Switcher */}
       {systems.length > 1 && (
         <FormField
@@ -200,10 +277,10 @@ export function PiProgramLibraryView({
               onChange={setSelectedSystemId}
               options={systems.map((s) => ({
                 value: s.id,
-                label: s.location
+                label: s.venue || s.location
                   ? intl.formatMessage(
-                      { defaultMessage: "{name} ({location})", description: "Venue option label" },
-                      { name: s.name, location: s.location }
+                      { defaultMessage: "{name} ({venue})", description: "Venue option label with venue" },
+                      { name: s.name, venue: s.venue || s.location }
                     )
                   : s.name,
               }))}
@@ -226,7 +303,7 @@ export function PiProgramLibraryView({
             </Text>
             <Text size="xsmall">
               {intl.formatMessage(
-                { defaultMessage: "Publishing to PiProgram will overwrite item {id} in place without altering playlists.", description: "Explains overwrite mechanism" },
+                { defaultMessage: "Publishing to Pi Ecosystem will overwrite item {id} in place without altering playlists.", description: "Explains overwrite mechanism" },
                 { id: activeOverwrite.itemId },
               )}
             </Text>
@@ -253,6 +330,7 @@ export function PiProgramLibraryView({
                   options={[
                     { value: "all", label: intl.formatMessage({ defaultMessage: "All items", description: "All items option" }) },
                     { value: "canva", label: intl.formatMessage({ defaultMessage: "Canva presentations", description: "Canva items option" }) },
+                    { value: "graphic", label: intl.formatMessage({ defaultMessage: "ATEM broadcast graphics", description: "ATEM graphics option" }) },
                     { value: "media", label: intl.formatMessage({ defaultMessage: "Images & media", description: "Media items option" }) },
                     { value: "pptx", label: intl.formatMessage({ defaultMessage: "PowerPoint", description: "PowerPoint items option" }) },
                     { value: "hymn", label: intl.formatMessage({ defaultMessage: "Hymns (virret)", description: "Hymns option" }) },
@@ -314,6 +392,8 @@ export function PiProgramLibraryView({
               const hasCanvaId = Boolean(item.canva?.designId && /^[a-zA-Z0-9_-]{3,64}$/.test(item.canva.designId));
               const isCurrentDesign = Boolean(hasCanvaId && currentDesignId && item.canva?.designId === currentDesignId);
               const isTargeted = activeOverwrite?.itemId === item.id;
+              const isGraphic = item.kind === "graphic" || item.kind === "atem";
+              const isExpanded = expandedItemId === item.id;
               const designId = item.canva?.designId;
 
               return (
@@ -324,10 +404,17 @@ export function PiProgramLibraryView({
                         <Title size="small">{item.title}</Title>
                       </Column>
                       <Column width="content">
-                        <Badge
-                          tone={hasCanvaId ? "positive" : "contrast"}
-                          text={item.kind.toUpperCase()}
-                        />
+                        {isGraphic ? (
+                          <Badge
+                            tone="positive"
+                            text={intl.formatMessage({ defaultMessage: "ATEM GRAPHIC", description: "ATEM graphic badge" })}
+                          />
+                        ) : (
+                          <Badge
+                            tone={hasCanvaId ? "positive" : "contrast"}
+                            text={item.kind.toUpperCase()}
+                          />
+                        )}
                       </Column>
                     </Columns>
 
@@ -351,7 +438,7 @@ export function PiProgramLibraryView({
                       )}
                     </Columns>
 
-                    <Columns spacing="1u">
+                    <Columns spacing="1u" alignY="center">
                       {hasCanvaId && designId && (
                         <Column>
                           <Button
@@ -380,21 +467,112 @@ export function PiProgramLibraryView({
                         <Button
                           variant="tertiary"
                           size="small"
-                          onClick={() => handleImportOriginalPage(item)}
+                          onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
                         >
-                          {intl.formatMessage({ defaultMessage: "Import page", description: "Import raw page into design" })}
-                        </Button>
-                      </Column>
-                      <Column width="content">
-                        <Button
-                          variant="tertiary"
-                          size="small"
-                          onClick={() => handleDownloadOriginal(item)}
-                        >
-                          {intl.formatMessage({ defaultMessage: "Download", description: "Download original asset" })}
+                          {isExpanded
+                            ? intl.formatMessage({ defaultMessage: "Hide details", description: "Hide item details" })
+                            : intl.formatMessage({ defaultMessage: "Details & ATEM", description: "Show item details and ATEM options" })}
                         </Button>
                       </Column>
                     </Columns>
+
+                    {isExpanded && (
+                      <Box padding="1.5u" background="surface">
+                        <Rows spacing="1.5u">
+                          <Text size="small">
+                            <strong>
+                              {intl.formatMessage({ defaultMessage: "ATEM Broadcast & Display Settings", description: "ATEM drawer title" })}
+                            </strong>
+                          </Text>
+
+                          <Columns spacing="1u">
+                            <Column>
+                              <FormField
+                                label={intl.formatMessage({ defaultMessage: "Animation style", description: "Animation style label" })}
+                                value={itemAtemMovement[item.id] || (isGraphic ? "fly-bottom" : "cut")}
+                                control={(props) => (
+                                  <Select
+                                    {...props}
+                                    stretch
+                                    onChange={(val) => setItemAtemMovement((prev) => ({ ...prev, [item.id]: val }))}
+                                    options={[
+                                      { value: "fly-bottom", label: intl.formatMessage({ defaultMessage: "Fly in (Lower third / Alhaalta)", description: "Fly bottom" }) },
+                                      { value: "fly-left", label: intl.formatMessage({ defaultMessage: "Fly in (Vasemmalta)", description: "Fly left" }) },
+                                      { value: "dissolve", label: intl.formatMessage({ defaultMessage: "Dissolve (Häivytys)", description: "Dissolve" }) },
+                                      { value: "cut", label: intl.formatMessage({ defaultMessage: "Cut (Suora leikkaus)", description: "Cut" }) },
+                                    ]}
+                                  />
+                                )}
+                              />
+                            </Column>
+                            <Column>
+                              <FormField
+                                label={intl.formatMessage({ defaultMessage: "Auto-hide", description: "Auto-hide duration label" })}
+                                value={String(itemAtemAutoHide[item.id] ?? 7000)}
+                                control={(props) => (
+                                  <Select
+                                    {...props}
+                                    stretch
+                                    onChange={(val) => setItemAtemAutoHide((prev) => ({ ...prev, [item.id]: Number(val) }))}
+                                    options={[
+                                      { value: "5000", label: intl.formatMessage({ defaultMessage: "5 seconds", description: "5s option" }) },
+                                      { value: "7000", label: intl.formatMessage({ defaultMessage: "7 seconds", description: "7s option" }) },
+                                      { value: "10000", label: intl.formatMessage({ defaultMessage: "10 seconds", description: "10s option" }) },
+                                      { value: "0", label: intl.formatMessage({ defaultMessage: "Manual off-air", description: "Manual option" }) },
+                                    ]}
+                                  />
+                                )}
+                              />
+                            </Column>
+                          </Columns>
+
+                          <Columns spacing="1u">
+                            <Column>
+                              <Button
+                                variant="secondary"
+                                size="small"
+                                stretch
+                                loading={airingItemId === item.id}
+                                disabled={Boolean(airingItemId)}
+                                onClick={() => void handleTakeOnAir(item)}
+                              >
+                                {intl.formatMessage({ defaultMessage: "Take on Air (ATEM)", description: "Take graphic on air" })}
+                              </Button>
+                            </Column>
+                            <Column width="content">
+                              <Button
+                                variant="tertiary"
+                                size="small"
+                                onClick={() => void handleTakeOffAir()}
+                              >
+                                {intl.formatMessage({ defaultMessage: "Off Air", description: "Take graphic off air" })}
+                              </Button>
+                            </Column>
+                          </Columns>
+
+                          <Columns spacing="1u">
+                            <Column width="content">
+                              <Button
+                                variant="tertiary"
+                                size="small"
+                                onClick={() => handleImportOriginalPage(item)}
+                              >
+                                {intl.formatMessage({ defaultMessage: "Import page into design", description: "Import raw page into design" })}
+                              </Button>
+                            </Column>
+                            <Column width="content">
+                              <Button
+                                variant="tertiary"
+                                size="small"
+                                onClick={() => handleDownloadOriginal(item)}
+                              >
+                                {intl.formatMessage({ defaultMessage: "Download original", description: "Download original asset" })}
+                              </Button>
+                            </Column>
+                          </Columns>
+                        </Rows>
+                      </Box>
+                    )}
                   </Rows>
                 </Box>
               );
