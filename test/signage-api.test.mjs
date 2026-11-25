@@ -31,10 +31,10 @@ function clock() {
 
 const screen = { id: "lobby", name: "Lobby", orientation: "landscape", width: 1920, height: 1080, defaultImageSeconds: 10, maxVideoSeconds: null, entryCount: 7, playlistVersion: 12 };
 
-test("listScreens: 200 returns screens, appends /api/v1 and sends the Canva token", async () => {
+test("listScreens: 200 returns screens, appends /api/v1?kind=screen and sends the Canva token", async () => {
   const f = fake(json(200, { screens: [screen] }));
   assert.deepEqual(await listScreens(opts(f)), [screen]);
-  assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens");
+  assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens?kind=screen");
   assert.equal(f.calls[0].init.headers.Authorization, "Bearer canva-token");
 });
 
@@ -43,6 +43,15 @@ test("listViews: requests kind=view and returns only the view collection", async
   const f = fake(json(200, { screens: [view] }));
   assert.deepEqual(await listViews(opts(f)), [view]);
   assert.equal(f.calls[0].url, "https://sissi.example.org/signage/api/v1/screens?kind=view");
+});
+
+test("FORBIDDEN includes service detail message", async () => {
+  const f = fake(json(403, errBody("FORBIDDEN", "Requires sissi:operate")));
+  await assert.rejects(pushSignage({ screenId: "lobby", title: "t", pages: [{ pageNumber: 1, url: "https://a" }] }, opts(f)), (e) => {
+    assert.equal(e.code, "FORBIDDEN");
+    assert.match(e.message, /Requires sissi:operate/);
+    return true;
+  });
 });
 
 test("push key is used only when there is no Canva token", async () => {

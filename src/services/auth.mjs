@@ -101,10 +101,26 @@ export function hasRight(rights, right) {
  * - "unknown": the gateway has no session route yet (older gateway) or could not be reached; nothing is gated.
  * `canWrite` and `canOperate` only hide or disable controls. The server enforces on every call.
  */
+function jwtDisplayName(token) {
+  try {
+    const parts = String(token ?? "").split(".");
+    if (parts.length !== 3) return "";
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const parsed = JSON.parse(atob(padded));
+    const name = typeof parsed?.name === "string" ? parsed.name.trim() : "";
+    const email = typeof parsed?.email === "string" ? parsed.email.trim() : "";
+    return name || email;
+  } catch {
+    return "";
+  }
+}
+
 export async function loadAccount(options = {}) {
   if (!CONFIG.tunnusSignIn) return account("off");
   const token = await (options.getToken || getTunnusToken)();
   if (!token) return account("signed-out");
+  const fallbackName = jwtDisplayName(token);
   const base = String(options.baseUrl ?? CONFIG.gatewayUrl).replace(/\/+$/, "");
   const fetchFn = options.fetch || customFetchImpl || fetch;
   const controller = new AbortController();
@@ -114,15 +130,15 @@ export async function loadAccount(options = {}) {
       headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
       signal: controller.signal,
     });
-    if (res.status === 401 || res.status === 403) return account("no-access");
-    if (!res.ok) return account("unknown");
+    if (res.status === 401 || res.status === 403) return account("no-access", { name: fallbackName });
+    if (!res.ok) return account("unknown", { name: fallbackName });
     const body = await res.json();
     const rights = Array.isArray(body?.rights) ? body.rights.filter((r) => typeof r === "string") : [];
-    const name = typeof body?.name === "string" ? body.name : "";
+    const name = (typeof body?.name === "string" && body.name.trim()) || fallbackName;
     if (rights.length === 0) return account("no-access", { name });
     return account("signed-in", { name, rights });
   } catch {
-    return account("unknown");
+    return account("unknown", { name: fallbackName });
   } finally {
     clearTimeout(timer);
   }

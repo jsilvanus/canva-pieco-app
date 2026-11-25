@@ -14,12 +14,12 @@ import {
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
 function setSignIn(on) {
-  if (on) process.env.VITE_TUNNUS_SIGN_IN = "1";
-  else delete process.env.VITE_TUNNUS_SIGN_IN;
+  if (on === undefined) delete process.env.VITE_TUNNUS_SIGN_IN;
+  else process.env.VITE_TUNNUS_SIGN_IN = on ? "1" : "0";
 }
 
 afterEach(() => {
-  setSignIn(false);
+  setSignIn(undefined);
   resetOauthClient();
 });
 
@@ -35,8 +35,15 @@ test("hasRight: explicit rights, admin includes the module's levels, write does 
 });
 
 test("loadAccount: sign-in off gates nothing and makes no call", async () => {
+  setSignIn(false);
   const account = await loadAccount({ fetch: async () => assert.fail("no call expected") });
   assert.deepEqual({ state: account.state, w: account.canWrite, o: account.canOperate }, { state: "off", w: true, o: true });
+});
+
+test("CONFIG.tunnusSignIn defaults to true when VITE_TUNNUS_SIGN_IN is unset", async () => {
+  setSignIn(undefined);
+  const { CONFIG } = await import("../src/config.mjs");
+  assert.equal(CONFIG.tunnusSignIn, true);
 });
 
 test("loadAccount: signed out keeps the app usable and offers sign-in", async () => {
@@ -79,6 +86,7 @@ test("loadAccount: 403 or no rights means no access, an old gateway or an error 
 });
 
 test("getTunnusToken: null while sign-in is off; the token (and forceRefresh) when on; never throws", async () => {
+  setSignIn(false);
   assert.equal(await getTunnusToken(), null);
   setSignIn(true);
   const seen = [];

@@ -50,7 +50,7 @@ export type SignageSettings = {
 };
 export type TargetOptions = { signageUrl?: string };
 export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video"; name?: string };
-export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; title?: string; text?: string; link?: string };
+export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; headline?: string; caption?: string; link?: string };
 export function getTargets(options?: TargetOptions): Target[];
 export function signageFallbackSize(orientation?: string): { width: number; height: number };
 export function signageKindFor(file: SignageFile): "image" | "video" | undefined;

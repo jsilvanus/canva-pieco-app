@@ -82,11 +82,10 @@ export const CONFIG = Object.freeze({
     return typeof stored.signagePushKey === "string" && stored.signageUrl ? stored.signagePushKey : env.VITE_SIGNAGE_PUSH_KEY || "";
   },
   /**
-   * Sign in with Tunnus through Canva's OAuth (VITE_TUNNUS_SIGN_IN=1). Off by default: the Auth provider has to
-   * exist in the Canva Developer Portal first. While off, the app works as before (Canva user token or key).
+   * Sign in with Tunnus through Canva's OAuth (on by default; set VITE_TUNNUS_SIGN_IN=0 to turn off).
    */
   get tunnusSignIn() {
-    return /^(1|true|on|yes)$/i.test(String(env.VITE_TUNNUS_SIGN_IN || ""));
+    return !/^(0|false|off|no)$/i.test(String(env.VITE_TUNNUS_SIGN_IN ?? "").trim());
   },
   /** The identifier of the Auth provider in the Canva Developer Portal (VITE_AUTH_PROVIDER). */
   authProvider: env.VITE_AUTH_PROVIDER || "tunnus",

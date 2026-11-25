@@ -38,7 +38,7 @@ const USER_MESSAGES = {
 };
 
 /** Codes whose user text is followed by the service's message as detail. */
-const DETAIL_CODES = new Set(["DOWNLOAD_FAILED", "TOO_LARGE", "UNSUPPORTED_TYPE", "KIND_MISMATCH", "VIDEO_TOO_LONG"]);
+const DETAIL_CODES = new Set(["DOWNLOAD_FAILED", "TOO_LARGE", "UNSUPPORTED_TYPE", "KIND_MISMATCH", "VIDEO_TOO_LONG", "FORBIDDEN"]);
 
 /** Fallback by HTTP status when the body has no known code. */
 const STATUS_CODES = {
@@ -185,7 +185,7 @@ function notConfigured() {
  * Options (all optional): baseUrl, pushKey, fetch, getToken, timeoutMs, mock.
  */
 export async function listScreens(options = {}) {
-  const kind = options.kind;
+  const kind = options.kind === undefined ? "screen" : options.kind;
   if (await useMock(options)) return (kind === "view" ? MOCK_VIEWS : MOCK_SCREENS).map((s) => ({ ...s }));
   if (!resolveBaseUrl(options)) throw notConfigured();
   const data = await apiRequest(`/screens${kind ? `?kind=${encodeURIComponent(kind)}` : ""}`, options);

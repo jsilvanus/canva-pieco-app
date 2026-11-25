@@ -124,7 +124,7 @@ export function App() {
 
         {account.state !== "off" && (
           <Rows spacing="1u">
-            {account.state === "signed-in" || account.state === "no-access" ? (
+            {account.state !== "signed-out" ? (
               <Columns spacing="1u" alignY="center">
                 <Column>
                   <Text size="small">

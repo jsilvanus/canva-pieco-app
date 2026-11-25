@@ -167,8 +167,21 @@ function validateSignageSettings(settings) {
   const s = settings?.signage ?? {};
   if (!String(s.screenId ?? "").trim()) errors.push("screenId");
   if (settings.targetId === "signage-view") {
-    for (const field of ["title", "text", "alt"]) if (typeof s[field] === "string" && s[field].length > 500) errors.push(field);
-    if (s.link && (!/^https:\/\//i.test(s.link) || s.link.length > 2048)) errors.push("link");
+    if (typeof s.title === "string" && s.title.length > 120) errors.push("title");
+    if (typeof s.alt === "string" && s.alt.length > 300) errors.push("alt");
+    if (typeof s.text === "string" && s.text.length > 500) errors.push("text");
+    if (s.link) {
+      let linkOk = typeof s.link === "string" && s.link.length <= 2048;
+      if (linkOk) {
+        try {
+          const u = new URL(s.link);
+          linkOk = u.protocol === "https:" && !u.username && !u.password;
+        } catch {
+          linkOk = false;
+        }
+      }
+      if (!linkOk) errors.push("link");
+    }
   }
   const values = [];
   if (s.secondsAll !== undefined && s.secondsAll !== null) values.push(s.secondsAll);
@@ -211,7 +224,7 @@ export function buildSignagePushPayload(settings, files) {
         ...(kind ? { kind } : {}),
         url: f.url,
         ...(settings.targetId === "signage-view" ? {
-          alt: String(s.alt || f.name || settings.name || `Page ${pageNumber}`).trim(),
+          alt: String(s.alt || f.name || settings.name || `Page ${pageNumber}`).trim().slice(0, 300),
           ...(s.title ? { headline: s.title } : {}),
           ...(s.text ? { caption: s.text } : {}),
           ...(s.link ? { link: s.link } : {}),

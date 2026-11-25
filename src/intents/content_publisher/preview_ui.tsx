@@ -14,6 +14,7 @@ import {
   isValidSecondsValue,
   isVideoTooLong,
   screenTargetDimensions,
+  subscribeDraftAuthChanged,
   updatePageSeconds,
   writeDraftSecondsByPage,
 } from "./signage-publisher.mjs";
@@ -41,15 +42,20 @@ export function PreviewUi({ invocationContext, registerOnPreviewChange }: Render
   useEffect(() => {
     if (!isSignage) return;
     let cancelled = false;
-    void (isView ? listViews() : listScreens())
-      .then((list) => {
-        if (!cancelled) setScreens(list);
-      })
-      .catch(() => {
-        if (!cancelled) setScreens([]);
-      });
+    const load = () => {
+      void (isView ? listViews() : listScreens())
+        .then((list) => {
+          if (!cancelled) setScreens(list);
+        })
+        .catch(() => {
+          if (!cancelled) setScreens([]);
+        });
+    };
+    load();
+    const unsubscribe = subscribeDraftAuthChanged(load);
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [isSignage, isView]);
 

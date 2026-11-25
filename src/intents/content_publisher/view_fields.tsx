@@ -46,12 +46,21 @@ export function ViewFields({ value, views, errors, showErrors, onRetry, onChange
         label={intl.formatMessage({ defaultMessage: "Heading", description: "Optional heading shown by the Sissi web embed" })}
         labelMarker="optional"
         value={value.title ?? ""}
+        error={showErrors && errors.includes("title")}
         control={(props) => <TextInput {...props} onChange={(title) => onChange({ title })} />}
+      />
+      <FormField
+        label={intl.formatMessage({ defaultMessage: "Alt text", description: "Optional alt text for accessibility on the Sissi web embed" })}
+        labelMarker="optional"
+        value={value.alt ?? ""}
+        error={showErrors && errors.includes("alt")}
+        control={(props) => <TextInput {...props} onChange={(alt) => onChange({ alt })} />}
       />
       <FormField
         label={intl.formatMessage({ defaultMessage: "Description", description: "Optional description shown by the Sissi web embed" })}
         labelMarker="optional"
         value={value.text ?? ""}
+        error={showErrors && errors.includes("text")}
         control={(props) => <TextInput {...props} onChange={(text) => onChange({ text })} />}
       />
       <FormField

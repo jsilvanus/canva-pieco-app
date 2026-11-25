@@ -56,6 +56,8 @@ export function computeSignageWarnings(
 export function writeDraftSecondsByPage(secondsByPage: Record<string, number>): void;
 export function readDraftSecondsByPage(): Record<string, number> | null;
 export function subscribeDraftSecondsByPage(onChange: (secondsByPage: Record<string, number>) => void): () => void;
+export function notifyDraftAuthChanged(): void;
+export function subscribeDraftAuthChanged(onChange: () => void): () => void;
 
 export type PublishSignageDeps = {
   signageUrl?: string;

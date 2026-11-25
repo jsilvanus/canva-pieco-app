@@ -11,6 +11,7 @@ import {
 } from "../publish-targets.mjs";
 
 const DRAFT_STORAGE_KEY = "canva-pieco-app.signage-draft";
+const DRAFT_AUTH_KEY = "canva-pieco-app.auth-changed";
 const DRAFT_CHANNEL = "canva-pieco-app.signage-draft";
 
 /**
@@ -25,10 +26,12 @@ export function isSignageTarget(target) {
 export function screenTargetDimensions(screen) {
   const explicitWidth = typeof screen?.width === "number" && screen.width > 0 ? screen.width : null;
   const explicitHeight = typeof screen?.height === "number" && screen.height > 0 ? screen.height : null;
-  const aspect = /^([0-9]{1,2}):([0-9]{1,2})$/.exec(screen?.embed?.options?.aspect ?? "");
+  const aspect = /^([1-9]\d?):([1-9]\d?)$/.exec(screen?.embed?.options?.aspect ?? "");
   const ratio = aspect ? Number(aspect[1]) / Number(aspect[2]) : null;
-  const orientation = explicitWidth && explicitHeight
-    ? (explicitWidth >= explicitHeight ? "landscape" : "vertical")
+  const derivedWidth = explicitWidth ?? (explicitHeight && ratio ? Math.round(explicitHeight * ratio) : null);
+  const derivedHeight = explicitHeight ?? (explicitWidth && ratio ? Math.round(explicitWidth / ratio) : null);
+  const orientation = derivedWidth && derivedHeight
+    ? (derivedWidth >= derivedHeight ? "landscape" : "vertical")
     : ratio
       ? (ratio >= 1 ? "landscape" : "vertical")
       : screen?.orientation === "vertical" || screen?.orientation === "portrait" ? "vertical" : "landscape";
@@ -39,8 +42,8 @@ export function screenTargetDimensions(screen) {
     : signageFallbackSize(orientation);
   return {
     orientation,
-    width: explicitWidth ?? fallback.width,
-    height: explicitHeight ?? fallback.height,
+    width: derivedWidth ?? fallback.width,
+    height: derivedHeight ?? fallback.height,
   };
 }
 
@@ -120,6 +123,7 @@ export function formatDurationSeconds(durationMs) {
  * - videoTooLongPages: 1-based page numbers whose durationMs exceeds screen.maxVideoSeconds
  */
 export function computeSignageWarnings(previews, screen) {
+  if (!screen) return { sizeMismatch: null, videoTooLongPages: [] };
   const { width: targetWidth, height: targetHeight } = screenTargetDimensions(screen);
   let sizeMismatch = null;
   const videoTooLongPages = [];
@@ -203,6 +207,53 @@ export function subscribeDraftSecondsByPage(onChange) {
             // ignore
           }
         }
+      };
+      globalThis.addEventListener("storage", handler);
+      cleanups.push(() => globalThis.removeEventListener("storage", handler));
+    }
+  } catch {
+    // ignore
+  }
+  return () => {
+    for (const fn of cleanups) fn();
+  };
+}
+
+export function notifyDraftAuthChanged() {
+  const ts = String(Date.now());
+  try {
+    globalThis.localStorage?.setItem(DRAFT_AUTH_KEY, ts);
+  } catch {
+    // ignore
+  }
+  try {
+    if (typeof globalThis.BroadcastChannel === "function") {
+      const ch = new globalThis.BroadcastChannel(DRAFT_CHANNEL);
+      ch.postMessage({ authChanged: ts });
+      ch.close();
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function subscribeDraftAuthChanged(onChange) {
+  const cleanups = [];
+  try {
+    if (typeof globalThis.BroadcastChannel === "function") {
+      const ch = new globalThis.BroadcastChannel(DRAFT_CHANNEL);
+      ch.onmessage = (event) => {
+        if (event?.data?.authChanged) onChange();
+      };
+      cleanups.push(() => ch.close());
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    if (typeof globalThis.addEventListener === "function") {
+      const handler = (event) => {
+        if (event?.key === DRAFT_AUTH_KEY) onChange();
       };
       globalThis.addEventListener("storage", handler);
       cleanups.push(() => globalThis.removeEventListener("storage", handler));

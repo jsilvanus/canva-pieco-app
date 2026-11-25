@@ -163,9 +163,15 @@ test("views: publish metadata is copied onto every page and remains disabled by 
   assert.equal(payload.pages[1].link, "https://example.org/events");
 });
 
-test("views: links must be HTTPS and saved PiProgram ids migrate", () => {
+test("views: links must be HTTPS, text limits match Sissi (120/300/500), and alt fallback is sliced", () => {
   const invalid = { targetId: "signage-view", name: "x", signage: { screenId: "aikuistyo", link: "http://example.org" } };
   assert.deepEqual(validatePublishSettings(invalid, url).errors, ["link"]);
+  assert.deepEqual(validatePublishSettings({ targetId: "signage-view", name: "x", signage: { screenId: "a", link: "https://user:pass@example.org" } }, url).errors, ["link"]);
+  assert.deepEqual(validatePublishSettings({ targetId: "signage-view", name: "x", signage: { screenId: "a", title: "t".repeat(121) } }, url).errors, ["title"]);
+  assert.deepEqual(validatePublishSettings({ targetId: "signage-view", name: "x", signage: { screenId: "a", alt: "a".repeat(301) } }, url).errors, ["alt"]);
+  assert.deepEqual(validatePublishSettings({ targetId: "signage-view", name: "x", signage: { screenId: "a", text: "c".repeat(501) } }, url).errors, ["text"]);
+  const longAltPayload = buildSignagePushPayload({ targetId: "signage-view", name: "x", signage: { screenId: "a" } }, [{ url: "https://cdn.example/1.png", name: "n".repeat(350) }]);
+  assert.equal(longAltPayload.pages[0].alt.length, 300);
   assert.equal(JSON.parse(encodePublishRef({ targetId: "piprogram-atem" })).targetId, "piprogram-atem");
   assert.equal(decodePublishRef(JSON.stringify({ targetId: "piprogram-atem" })).targetId, "piprogram");
 });

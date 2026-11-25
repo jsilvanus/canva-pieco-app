@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
-import { Alert, Badge, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
+import { Alert, Badge, Button, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import type { DateObj } from "@canva/app-ui-kit";
 import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
 import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
+import { loadAccount, signIn, signOut } from "../../services/auth.mjs";
+import type { Account } from "../../services/auth.mjs";
 import { listScreens, listViews } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
@@ -17,6 +19,7 @@ import {
   isScreenNotFoundPayload,
   isSignageTarget,
   mergeSignageSettings,
+  notifyDraftAuthChanged,
   screenListFailed,
   screenListInitialState,
   screenListLoaded,
@@ -44,12 +47,23 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   const [publishError, setPublishError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [screenList, setScreenList] = useState<ScreenListState>(screenListInitialState);
+  const [account, setAccount] = useState<Account>({ state: "off", name: "", rights: [], canWrite: true, canOperate: true });
+  const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const signageUrl = CONFIG.signageUrl;
   const target = targetById(settings.targetId, { signageUrl });
   const isSignage = isSignageTarget(target);
   const isView = target?.kind === "signage-view";
   const isGraphics = target?.id === "pigraphics-stream";
+
+  const refreshAccount = useCallback(async () => {
+    setAccount(await loadAccount());
+  }, []);
+
+  useEffect(() => {
+    void refreshAccount();
+  }, [refreshAccount]);
 
   const loadScreens = useCallback(async () => {
     setScreenList(screenListInitialState());
@@ -70,7 +84,13 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
       registerOnContextChange({
         onContextChange: (context: SettingsUiContext) => {
           if (context.reason === "publish_settings") {
-            setSettings((prev) => ({ ...prev, targetId: context.outputType.id }));
+            setSettings((prev) => ({
+              ...prev,
+              targetId: context.outputType.id,
+              signage: prev.targetId !== context.outputType.id && prev.signage
+                ? { ...prev.signage, screenId: "" }
+                : prev.signage,
+            }));
           } else if (context.reason === "publish_error") {
             const payload = context.error.appDefinedPayload ?? "";
             setPublishError(payload);
@@ -91,9 +111,46 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   }, [isSignage]);
 
   const { validityState, errors } = validatePublishSettings(settings, { signageUrl });
+  const effectiveValidity =
+    (isSignage && account.state === "signed-out" && screenList.status === "error") ||
+    (!isSignage && account.state === "no-access")
+      ? "invalid_authentication_required"
+      : validityState;
   useEffect(() => {
-    updatePublishSettings({ publishRef: encodePublishRef(settings), validityState });
-  }, [settings, validityState, updatePublishSettings]);
+    updatePublishSettings({ publishRef: encodePublishRef(settings), validityState: effectiveValidity });
+  }, [settings, effectiveValidity, updatePublishSettings]);
+
+  const onSignIn = async () => {
+    setSigningIn(true);
+    setAuthError(null);
+    setPublishError(null);
+    try {
+      const done = await signIn();
+      if (!done) {
+        setAuthError(intl.formatMessage({ defaultMessage: "Sign-in was cancelled.", description: "Notice when the person closes the sign-in window" }));
+      }
+      await refreshAccount();
+      if (isSignage) await loadScreens();
+      notifyDraftAuthChanged();
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const onSignOut = async () => {
+    setAuthError(null);
+    setPublishError(null);
+    try {
+      await signOut();
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : String(err));
+    }
+    await refreshAccount();
+    if (isSignage) await loadScreens();
+    notifyDraftAuthChanged();
+  };
 
   const update = (patch: PublishSettingsData) => {
     setTouched(true);
@@ -111,6 +168,41 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
       <Text size="small" tone="tertiary">
         {intl.formatMessage({ defaultMessage: "Build v{version}", description: "Small developer build version label" }, { version: BUILD_VERSION })}
       </Text>
+
+      {account.state !== "off" && (
+        <Rows spacing="1u">
+          {account.state === "signed-out" ? (
+            <Button variant="secondary" onClick={onSignIn} loading={signingIn} disabled={signingIn} stretch>
+              {intl.formatMessage({ defaultMessage: "Sign in with the church account", description: "Opens the church sign-in window" })}
+            </Button>
+          ) : (
+            <Columns spacing="1u" alignY="center">
+              <Column>
+                <Text size="small">
+                  {account.name
+                    ? intl.formatMessage({ defaultMessage: "Signed in as {name}", description: "Shows the signed-in person" }, { name: account.name })
+                    : intl.formatMessage({ defaultMessage: "Signed in", description: "Shows that a person is signed in" })}
+                </Text>
+              </Column>
+              <Column width="content">
+                <Button variant="tertiary" onClick={onSignOut}>
+                  {intl.formatMessage({ defaultMessage: "Sign out", description: "Signs the person out of the church account" })}
+                </Button>
+              </Column>
+            </Columns>
+          )}
+          {account.state === "no-access" && !isSignage && (
+            <Alert tone="warn">
+              {intl.formatMessage({ defaultMessage: "Your account has no access to this app. Ask the church admin to add you to a group.", description: "Shown when the signed-in person has no rights" })}
+            </Alert>
+          )}
+          {authError && (
+            <Alert tone="critical" onDismiss={() => setAuthError(null)}>
+              {authError}
+            </Alert>
+          )}
+        </Rows>
+      )}
 
       <FormField
         label={intl.formatMessage({ defaultMessage: "Name", description: "Label of the presentation name field" })}
@@ -214,7 +306,7 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
 
       {isGraphics && <GraphicsFields value={settings.graphics?.movement ?? "none"} onChange={(movement) => update({ graphics: { movement } })} />}
 
-      {!isSignage && <GoLiveFields value={settings.goLive} onChange={(goLive) => update({ goLive })} />}
+      {target?.id === "piprogram" && <GoLiveFields value={settings.goLive} onChange={(goLive) => update({ goLive })} />}
 
       {!isSignage && !settings.usage?.from && !settings.usage?.to && (
         <Checkbox
