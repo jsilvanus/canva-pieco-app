@@ -16,6 +16,7 @@ import {
 import { BUILD_VERSION } from "../build-version.mjs";
 import { CONFIG } from "../config.mjs";
 import { getGatewayStatus } from "../services/gateway-api.mjs";
+import { readDesignPageText } from "../services/canva-sdk.mjs";
 import { loadAccount, signIn, signOut } from "../services/auth.mjs";
 import type { Account } from "../services/auth.mjs";
 import type { NoticeTone } from "./types";
@@ -68,6 +69,10 @@ export function App() {
   useEffect(() => {
     refreshAccount();
   }, [refreshAccount]);
+
+  useEffect(() => {
+    void readDesignPageText().catch(() => {});
+  }, []);
 
   const onSignIn = async () => {
     setSigningIn(true);

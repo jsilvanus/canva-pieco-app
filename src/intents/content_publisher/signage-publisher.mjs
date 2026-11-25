@@ -300,6 +300,7 @@ export async function publishSignageContent(
 
   const files = (outputMedia ?? [])
     .flatMap((media) => media.files ?? [])
+    .slice(0, 1)
     .map((file, index) => ({
       url: file.url,
       pageNumber: index + 1,

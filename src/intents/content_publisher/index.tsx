@@ -32,6 +32,7 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
         image: target.transparent ? { format: "png" as const, allowTransparentBackground: true } : { format: "png" as const },
       };
 
+  const isSissi = target.kind === "signage" || target.kind === "signage-view";
   return {
     id: target.id,
     displayName: target.displayName,
@@ -40,7 +41,7 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
       {
         id: "slides",
         displayName: "Slides",
-        fileCount: { min: 1 },
+        fileCount: isSissi ? { exact: 1 } : { min: 1 },
         accepts,
       },
     ],

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import { Alert, Badge, Button, Checkbox, Columns, Column, DateInput, FormField, Rows, Text, TextInput, Title } from "@canva/app-ui-kit";
 import type { DateObj } from "@canva/app-ui-kit";
-import type { RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
+import type { OutputType, RenderSettingsUiRequest, SettingsUiContext } from "@canva/intents/content";
 import { BUILD_VERSION } from "../../build-version.mjs";
 import { CONFIG } from "../../config.mjs";
 import { loadAccount, signIn, signOut } from "../../services/auth.mjs";
 import type { Account } from "../../services/auth.mjs";
+import { readCachedDesignPageText, readDesignPageText } from "../../services/canva-sdk.mjs";
+import type { DesignPageText } from "../../services/canva-sdk.mjs";
 import { listScreens, listViews } from "../../services/signage-api.mjs";
 import { decodePublishRef, encodePublishRef, targetById, validatePublishSettings } from "../publish-targets.mjs";
 import type { PublishSettingsData, SignageSettings } from "../publish-targets.mjs";
@@ -34,6 +36,20 @@ const fromIso = (s?: string): DateObj | undefined => {
   return m ? { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) } : undefined;
 };
 
+function extractSelectionTitle(outputType: OutputType | undefined): string {
+  for (const slot of outputType?.mediaSlots ?? []) {
+    for (const sel of slot.selection ?? []) {
+      for (const meta of sel.selectionMetadata ?? []) {
+        if (meta.type === "design" && typeof meta.title === "string") {
+          const trimmed = meta.title.trim();
+          if (trimmed) return trimmed;
+        }
+      }
+    }
+  }
+  return "";
+}
+
 /**
  * Publish settings: a name and either signage options (screen, enable now, seconds) or the date /
  * permanent-asset fields for the Pi targets.
@@ -50,6 +66,8 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   const [account, setAccount] = useState<Account>({ state: "off", name: "", rights: [], canWrite: true, canOperate: true });
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [designTitle, setDesignTitle] = useState<string>(() => extractSelectionTitle(invocationContext.outputType));
+  const [designPageText, setDesignPageText] = useState<DesignPageText | null>(() => readCachedDesignPageText());
 
   const signageUrl = CONFIG.signageUrl;
   const target = targetById(settings.targetId, { signageUrl });
@@ -64,6 +82,38 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
   useEffect(() => {
     void refreshAccount();
   }, [refreshAccount]);
+
+  useEffect(() => {
+    void readDesignPageText().then((pt) => {
+      if (pt) setDesignPageText(pt);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const fallbackTitle = (designTitle || designPageText?.heading || "").slice(0, 120);
+    const fallbackBody = (designPageText?.bodyText || designPageText?.fullText || "").slice(0, 500);
+    if (!fallbackTitle && !fallbackBody) return;
+    setSettings((prev) => {
+      let next = prev;
+      if (!prev.name && fallbackTitle) {
+        next = { ...next, name: fallbackTitle };
+      }
+      if (isView) {
+        const signage: Partial<SignageSettings> = next.signage ?? {};
+        const patch: Partial<SignageSettings> = {};
+        if (!signage.title && (designPageText?.heading || designTitle)) {
+          patch.title = (designPageText?.heading || designTitle).slice(0, 120);
+        }
+        if (!signage.text && fallbackBody) {
+          patch.text = fallbackBody;
+        }
+        if (Object.keys(patch).length > 0) {
+          next = mergeSignageSettings(next, patch);
+        }
+      }
+      return next;
+    });
+  }, [designTitle, designPageText, isView]);
 
   const loadScreens = useCallback(async () => {
     setScreenList(screenListInitialState());
@@ -84,6 +134,8 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
       registerOnContextChange({
         onContextChange: (context: SettingsUiContext) => {
           if (context.reason === "publish_settings") {
+            const nextTitle = extractSelectionTitle(context.outputType);
+            if (nextTitle) setDesignTitle(nextTitle);
             setSettings((prev) => ({
               ...prev,
               targetId: context.outputType.id,
@@ -269,6 +321,12 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
           showErrors={showErrors}
           onRetry={() => void loadScreens()}
           onChange={updateSignage}
+          hasDesignText={Boolean(designPageText?.fullText || designTitle)}
+          onFillFromDesign={() => {
+            const title = (designPageText?.heading || designTitle).slice(0, 120);
+            const text = (designPageText?.bodyText || designPageText?.fullText || "").slice(0, 500);
+            updateSignage({ ...(title ? { title } : {}), ...(text ? { text } : {}) });
+          }}
         />
       ) : isSignage ? (
         <SignageFields

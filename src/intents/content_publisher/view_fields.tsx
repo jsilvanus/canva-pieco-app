@@ -12,10 +12,12 @@ type Props = {
   showErrors: boolean;
   onRetry: () => void;
   onChange: (patch: Partial<SignageSettings>) => void;
+  hasDesignText?: boolean;
+  onFillFromDesign?: () => void;
 };
 
 /** Sissi web-view publishing: view picker, embed metadata, and independent live activation. */
-export function ViewFields({ value, views, errors, showErrors, onRetry, onChange }: Props) {
+export function ViewFields({ value, views, errors, showErrors, onRetry, onChange, hasDesignText, onFillFromDesign }: Props) {
   const intl = useIntl();
   const selected: SignageScreen | null = findScreenById(views.screens, value.screenId);
   const options = views.screens.filter((view) => !Array.isArray(view.rights) || view.rights.includes("write")).map((view) => ({
@@ -42,6 +44,11 @@ export function ViewFields({ value, views, errors, showErrors, onRetry, onChange
         error={showErrors && errors.includes("screenId")}
         control={(props) => <Select {...props} stretch disabled={views.status !== "ready" || options.length === 0} placeholder={intl.formatMessage({ defaultMessage: "Choose a web view", description: "Sissi web view selector placeholder" })} options={options} onChange={(screenId) => onChange({ screenId })} />}
       />
+      {hasDesignText && onFillFromDesign && (
+        <Button variant="secondary" size="small" onClick={onFillFromDesign}>
+          {intl.formatMessage({ defaultMessage: "Fill heading & text from design", description: "Pre-fill Sissi web view heading and description from Canva design text" })}
+        </Button>
+      )}
       <FormField
         label={intl.formatMessage({ defaultMessage: "Heading", description: "Optional heading shown by the Sissi web embed" })}
         labelMarker="optional"

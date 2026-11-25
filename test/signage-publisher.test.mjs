@@ -14,6 +14,7 @@ import {
   screenTargetDimensions,
   updatePageSeconds,
 } from "../src/intents/content_publisher/signage-publisher.mjs";
+import { extractTextBlocksFromElements, readCachedDesignPageText } from "../src/services/canva-sdk.mjs";
 import { SignageError } from "../src/services/signage-api.mjs";
 
 const LOBBY = {
@@ -156,7 +157,6 @@ test("publishSignageContent validates, builds payload, reports progress, and ret
       title: "Sunday service",
       pages: [
         { pageNumber: 1, kind: "image", url: "https://cdn.example/1.png", seconds: 15 },
-        { pageNumber: 2, kind: "video", url: "https://cdn.example/2.mp4" },
       ],
     },
   ]);
@@ -185,4 +185,25 @@ test("publishSignageContent returns app_error with SignageError message in appDe
 
   assert.equal(res.status, "app_error");
   assert.equal(res.appDefinedPayload, "The video is longer than this screen allows: 45s > 30s");
+});
+
+test("extractTextBlocksFromElements sorts top-to-bottom including grouped elements", () => {
+  const elements = [
+    { type: "text", top: 300, left: 20, text: { readPlaintext: () => "  Second paragraph.  " } },
+    {
+      type: "group",
+      top: 100,
+      left: 50,
+      contents: [
+        { type: "text", top: 0, left: 0, text: { readPlaintext: () => "Heading" } },
+        { type: "text", top: 60, left: 0, text: { readPlaintext: () => "Subheading" } },
+      ],
+    },
+    { type: "rect", top: 0, left: 0 },
+  ];
+  const parsed = extractTextBlocksFromElements(elements);
+  assert.equal(parsed.heading, "Heading");
+  assert.equal(parsed.bodyText, "Subheading\n\nSecond paragraph.");
+  assert.deepEqual(parsed.blocks, ["Heading", "Subheading", "Second paragraph."]);
+  assert.equal(readCachedDesignPageText(), null);
 });

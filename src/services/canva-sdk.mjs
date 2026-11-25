@@ -41,6 +41,124 @@ function createMockExport() {
   };
 }
 
+const DESIGN_TEXT_CACHE_KEY = "canva-pieco-app.design-text-cache";
+
+function readListItems(list) {
+  if (!list) return [];
+  if (Array.isArray(list)) return list;
+  const out = [];
+  if (typeof list[Symbol.iterator] === "function") {
+    for (const item of list) out.push(item);
+    return out;
+  }
+  if (typeof list.length === "number") {
+    for (let i = 0; i < list.length; i++) out.push(list.at ? list.at(i) : list[i]);
+  }
+  return out;
+}
+
+/**
+ * Extracts sorted non-empty text blocks from Canva DesignEditing elements.
+ * @param {unknown} elements
+ */
+export function extractTextBlocksFromElements(elements) {
+  const collected = [];
+  const visit = (list, offsetTop = 0, offsetLeft = 0) => {
+    for (const el of readListItems(list)) {
+      if (!el || typeof el !== "object") continue;
+      const top = offsetTop + (typeof el.top === "number" ? el.top : 0);
+      const left = offsetLeft + (typeof el.left === "number" ? el.left : 0);
+      if (el.type === "text" && el.text && typeof el.text.readPlaintext === "function") {
+        const raw = el.text.readPlaintext();
+        const text = typeof raw === "string" ? raw.trim() : "";
+        if (text) collected.push({ text, top, left });
+      } else if (el.type === "group" && el.contents) {
+        visit(el.contents, top, left);
+      }
+    }
+  };
+  visit(elements);
+  collected.sort((a, b) => (a.top !== b.top ? a.top - b.top : a.left - b.left));
+  const blocks = collected.map((item) => item.text);
+  const heading = blocks[0] ?? "";
+  const bodyText = blocks.length > 1 ? blocks.slice(1).join("\n\n") : heading;
+  const fullText = blocks.join("\n\n");
+  return { heading, bodyText, fullText, blocks };
+}
+
+/**
+ * Reads cached design page text previously extracted on the Design Editor surface.
+ */
+export function readCachedDesignPageText() {
+  try {
+    const raw = globalThis.localStorage?.getItem(DESIGN_TEXT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      heading: typeof parsed.heading === "string" ? parsed.heading : "",
+      bodyText: typeof parsed.bodyText === "string" ? parsed.bodyText : "",
+      fullText: typeof parsed.fullText === "string" ? parsed.fullText : "",
+      blocks: Array.isArray(parsed.blocks) ? parsed.blocks.filter((b) => typeof b === "string") : [],
+      updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reads text elements from the current Canva page when supported (Design Editor surface)
+ * and caches the result so the Content Publisher surface can pre-fill web page fields.
+ */
+export async function readDesignPageText() {
+  if (!isRunningInCanva()) {
+    const mock = {
+      heading: "Sunday Service",
+      bodyText: "Welcome to our Sunday worship service at 10:00.",
+      fullText: "Sunday Service\n\nWelcome to our Sunday worship service at 10:00.",
+      blocks: ["Sunday Service", "Welcome to our Sunday worship service at 10:00."],
+      updatedAt: Date.now(),
+    };
+    try {
+      globalThis.localStorage?.setItem(DESIGN_TEXT_CACHE_KEY, JSON.stringify(mock));
+    } catch {
+      // ignore
+    }
+    return mock;
+  }
+
+  try {
+    const [{ openDesign }, { features }] = await Promise.all([
+      import("@canva/design"),
+      import("@canva/platform"),
+    ]);
+    if (!features.isSupported(openDesign)) {
+      return readCachedDesignPageText();
+    }
+    let extracted = null;
+    await openDesign({ type: "current_page" }, async (session) => {
+      if (session?.page?.type === "absolute") {
+        extracted = {
+          ...extractTextBlocksFromElements(session.page.elements),
+          updatedAt: Date.now(),
+        };
+      }
+    });
+    if (extracted) {
+      try {
+        globalThis.localStorage?.setItem(DESIGN_TEXT_CACHE_KEY, JSON.stringify(extracted));
+      } catch {
+        // ignore
+      }
+      return extracted;
+    }
+  } catch {
+    // unsupported_surface on Content Publisher or user design lock — fall back to cache
+  }
+  return readCachedDesignPageText();
+}
+
 /**
  * Reads the current Canva design's title for prefilling name fields.
  * Returns "" when unavailable or outside Canva (mock title in dev).
