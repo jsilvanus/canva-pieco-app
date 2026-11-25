@@ -128,7 +128,7 @@ export async function listPiSystems({
           continue;
         }
 
-        const rawUrl = entry.url || entry.gatewayUrl || entry.tunnelUrl;
+        const rawUrl = entry.endpoint_url || entry.url || entry.gatewayUrl || entry.tunnelUrl;
         const url = normalizeGatewayUrl(rawUrl);
         if (!url || seenUrls.has(url)) continue;
         seenUrls.add(url);

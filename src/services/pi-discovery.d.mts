@@ -13,6 +13,7 @@ export interface DiscoveredService {
   name: string;
   type: string;
   venue: string;
+  endpoint_url: string;
   url: string;
   auth?: ServiceAuth;
   capabilities?: string[];
