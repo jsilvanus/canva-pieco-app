@@ -23,7 +23,8 @@ import {
   TextInput,
   Title,
 } from "@canva/app-ui-kit";
-import { exportDesignPages, getDesignTitle, isRunningInCanva, openExternalUrl } from "../services/canva-sdk.mjs";
+import { exportDesignPages, getCurrentDesignId, getDesignTitle, isRunningInCanva, openExternalUrl } from "../services/canva-sdk.mjs";
+import { reportValopankkiExport } from "../services/valopankki-api.mjs";
 import {
   controlSlide,
   createGoLiveList,
@@ -111,6 +112,15 @@ export function SlidesView({ notify, showProgress, clearProgress, busy, active, 
       setStaged({ presentationId: finished.presentationId || task.presentationId || "", itemId: finished.itemId || task.itemId || "", title: designName.trim() || exported.title || "Canva Presentation", pages });
       clearProgress();
       setStep("setup");
+      void getCurrentDesignId().then((did) => {
+        if (did) {
+          void reportValopankkiExport({
+            canvaDesignId: did,
+            canvaDesignTitle: resolvedTitle,
+            exportTarget: "piprogram",
+          }).catch(() => {});
+        }
+      });
       notify(intl.formatMessage({ defaultMessage: "Sent {count, plural, one {# slide} other {# slides}} to church storage.", description: "Success after the upload" }, { count: pages.length }), "positive");
     } catch (err) {
       clearProgress();

@@ -12,6 +12,7 @@ import type {
 } from "@canva/intents/content";
 import { CONFIG } from "../../config.mjs";
 import { createGoLiveList, pushContent, waitForTask, pushCanvaGraphic } from "../../services/gateway-api.mjs";
+import { reportValopankkiExport } from "../../services/valopankki-api.mjs";
 import { renderInCanva } from "../../app/mount";
 import { getTargets, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
 import type { Target } from "../publish-targets.mjs";
@@ -89,6 +90,13 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
           useAt,
         });
       }
+      if (settings.designId) {
+        void reportValopankkiExport({
+          canvaDesignId: settings.designId,
+          canvaDesignTitle: String(settings.name ?? "Graphic"),
+          exportTarget: outputType.id,
+        }).catch(() => {});
+      }
       return { status: "completed" };
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -114,6 +122,13 @@ async function publishContent({ outputMedia, outputType, publishRef }: PublishCo
 
   try {
     const task = await pushContent(buildPushPayload(settings, pages));
+    if (settings.designId) {
+      void reportValopankkiExport({
+        canvaDesignId: settings.designId,
+        canvaDesignTitle: settings.name,
+        exportTarget: outputType.id,
+      }).catch(() => {});
+    }
     const goLive = settings.goLive;
     if (!goLive?.on) return { status: "completed" };
     // Publish and go live: wait until the slides are in Pi Program, save the Go live list and send the user to its run link.

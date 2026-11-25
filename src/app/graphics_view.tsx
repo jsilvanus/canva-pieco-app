@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { ArrowDownIcon, ArrowUpIcon, Badge, Box, Button, Columns, Column, FormField, ImageCard, Rows, Select, Text, Title } from "@canva/app-ui-kit";
-import { exportDesignPages, isRunningInCanva } from "../services/canva-sdk.mjs";
+import { exportDesignPages, getCurrentDesignId, isRunningInCanva } from "../services/canva-sdk.mjs";
 import { pushCanvaGraphic, setCanvaGraphicOffAir } from "../services/gateway-api.mjs";
+import { reportValopankkiExport } from "../services/valopankki-api.mjs";
 import { Thumbnails } from "./slides_view";
 import type { Page, PanelProps } from "./types";
 
@@ -67,6 +68,15 @@ export function GraphicsView({ notify, showProgress, clearProgress, busy, active
       // The gateway has no media player field yet; mediaPlayer stays a UI choice as before.
       const { movement, autoHideMs, keyer, slot } = options;
       await pushCanvaGraphic({ title, imageUrl: page.url, movement, autoHideMs, keyer, slot });
+      void getCurrentDesignId().then((did) => {
+        if (did) {
+          void reportValopankkiExport({
+            canvaDesignId: did,
+            canvaDesignTitle: title,
+            exportTarget: "atem",
+          }).catch(() => {});
+        }
+      });
       stopCountdown();
       let remaining: number | null = options.autoHideMs > 0 ? Math.round(options.autoHideMs / 1000) : null;
       setOnAir({ index: cued, remaining });

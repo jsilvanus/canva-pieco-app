@@ -1,5 +1,6 @@
 export type ValopankkiAssetFormat = 'svg' | 'png' | 'jpeg' | 'webp';
 export type ValopankkiAssetKind = 'logo' | 'symbol' | 'graphic' | 'photo' | 'badge';
+export type ValopankkiUsageAction = 'inserted' | 'exported';
 
 export interface ValopankkiAssetSummary {
   id: string;
@@ -52,11 +53,13 @@ export interface ValopankkiAssetUsageRequest {
   canvaDesignId?: string;
   canvaDesignTitle?: string;
   channel?: 'canva';
+  action?: ValopankkiUsageAction;
+  exportTarget?: 'piprogram' | 'sissi' | 'signage' | 'signage-view' | 'atem' | string;
 }
 
 export interface ValopankkiAssetUsageResponse {
   usageId: string;
-  asset: {
+  asset?: {
     id: string;
     title: string;
     format: ValopankkiAssetFormat;
@@ -65,7 +68,17 @@ export interface ValopankkiAssetUsageResponse {
     height: number | null;
     downloadUrl: string;
   };
+  action?: ValopankkiUsageAction;
   recordedAt: string;
+}
+
+export interface ValopankkiExportAuditReport {
+  canvaDesignId: string;
+  canvaDesignTitle?: string;
+  channel?: 'canva';
+  exportTarget: string;
+  assetIds?: string[];
+  exportedAt?: string;
 }
 
 export interface ValopankkiAssetsResponse {
@@ -95,6 +108,10 @@ export interface SearchValopankkiOptions extends ValopankkiRequestOptions {
   limit?: number;
 }
 
+export function recordAssetUsedInDesign(designId: string, assetId: string): void;
+export function getAssetsUsedInDesign(designId: string): string[];
+export function clearAssetsUsedInDesign(designId: string): void;
+
 export function getValopankkiBrandKit(options?: ValopankkiRequestOptions): Promise<ValopankkiBrandKit | null>;
 
 export function listValopankkiCollections(
@@ -116,3 +133,8 @@ export function insertValopankkiAssetIntoDesign(
   designContext?: { designId?: string; title?: string },
   options?: ValopankkiRequestOptions
 ): Promise<{ status: 'completed' | 'simulated' | 'unsupported'; usageId?: string }>;
+
+export function reportValopankkiExport(
+  report: ValopankkiExportAuditReport,
+  options?: ValopankkiRequestOptions
+): Promise<{ recorded: number; success: boolean }>;

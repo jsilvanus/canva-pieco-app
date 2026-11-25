@@ -1,5 +1,6 @@
 import { CONFIG } from "../../config.mjs";
 import { describeSignagePush, pushSignage, SignageError, waitForSignagePush } from "../../services/signage-api.mjs";
+import { reportValopankkiExport } from "../../services/valopankki-api.mjs";
 import {
   buildSignagePushPayload,
   decodePublishRef,
@@ -319,6 +320,13 @@ export async function publishSignageContent(
         if (onProgress) onProgress({ ...progress, label: describeSignagePush(progress.status) });
       },
     });
+    if (settings.designId) {
+      void reportValopankkiExport({
+        canvaDesignId: settings.designId,
+        canvaDesignTitle: settings.name || "Signage",
+        exportTarget: target.id,
+      }).catch(() => {});
+    }
     return { status: "completed", externalId: finalStatus.pushId };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);

@@ -6,6 +6,10 @@ import {
   listValopankkiCollections,
   searchValopankkiAssets,
   useValopankkiAsset,
+  recordAssetUsedInDesign,
+  getAssetsUsedInDesign,
+  clearAssetsUsedInDesign,
+  reportValopankkiExport,
 } from "../src/services/valopankki-api.mjs";
 import {
   getOverwriteTarget,
@@ -185,15 +189,64 @@ test("useValopankkiAsset posts usage log and retrieves asset downloadUrl", async
 
   const result = await useValopankkiAsset(
     "asset-1",
-    { canvaDesignId: "DAG12345", canvaDesignTitle: "Adventti" },
+    { canvaDesignId: "DAG12345", canvaDesignTitle: "Adventti", action: "inserted" },
     { valopankkiUrl: "https://valopankki.local", fetch: mockFetch }
   );
 
   assert.equal(postedBody.canvaDesignId, "DAG12345");
   assert.equal(postedBody.canvaDesignTitle, "Adventti");
   assert.equal(postedBody.channel, "canva");
+  assert.equal(postedBody.action, "inserted");
   assert.equal(result.usageId, "usage-123");
   assert.equal(result.asset.downloadUrl, "https://s3.local/signed/risti.svg");
+});
+
+test("design assets tracking records, retrieves, and clears asset usage in design", () => {
+  const designId = "DAG_TEST_DESIGN_1";
+  clearAssetsUsedInDesign(designId);
+  assert.deepEqual(getAssetsUsedInDesign(designId), []);
+
+  recordAssetUsedInDesign(designId, "asset-cross-1");
+  recordAssetUsedInDesign(designId, "asset-logo-2");
+  recordAssetUsedInDesign(designId, "asset-cross-1"); // deduplicated
+
+  const used = getAssetsUsedInDesign(designId);
+  assert.equal(used.length, 2);
+  assert.ok(used.includes("asset-cross-1"));
+  assert.ok(used.includes("asset-logo-2"));
+
+  clearAssetsUsedInDesign(designId);
+  assert.deepEqual(getAssetsUsedInDesign(designId), []);
+});
+
+test("reportValopankkiExport reports export audit to /api/canva/v1/audit/export", async () => {
+  let exportAuditBody = null;
+  const mockFetch = async (url, options) => {
+    if (url.includes("/audit/export")) {
+      exportAuditBody = JSON.parse(options.body);
+      return { ok: true, status: 200, json: async () => ({ recorded: 2, canvaDesignId: "DAG_EXP_1" }) };
+    }
+    return { ok: false, status: 404 };
+  };
+
+  const designId = "DAG_EXP_1";
+  recordAssetUsedInDesign(designId, "asset-1");
+  recordAssetUsedInDesign(designId, "asset-2");
+
+  const res = await reportValopankkiExport(
+    {
+      canvaDesignId: designId,
+      canvaDesignTitle: "Jumalanpalvelus",
+      exportTarget: "piprogram",
+    },
+    { valopankkiUrl: "https://valopankki.local", fetch: mockFetch }
+  );
+
+  assert.equal(res.success, true);
+  assert.equal(res.recorded, 2);
+  assert.equal(exportAuditBody.canvaDesignId, "DAG_EXP_1");
+  assert.equal(exportAuditBody.exportTarget, "piprogram");
+  assert.deepEqual(exportAuditBody.assetIds, ["asset-1", "asset-2"]);
 });
 
 test("overwrite target state can be set, read, and cleared", () => {
