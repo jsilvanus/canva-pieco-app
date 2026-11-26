@@ -81,7 +81,7 @@ export function clearRuntimeSettings() {
 export const CONFIG = Object.freeze({
   appName: env.VITE_APP_NAME || "Church Slide Bridge",
   get gatewayUrl() {
-    return normalizeGatewayUrl(readStored().gatewayUrl) || (env.VITE_GATEWAY_URL || "https://gateway.local:8443").replace(/\/+$/, "");
+    return normalizeGatewayUrl(readStored().gatewayUrl) || (env.VITE_GATEWAY_URL || "https://kehitys.riihimaenseurakunta.fi/canva").replace(/\/+$/, "");
   },
   /** Where picontrol runs, for the run link of a Go live list when the gateway does not give a full link (VITE_PICONTROL_URL). */
   picontrolUrl: (env.VITE_PICONTROL_URL || "").replace(/\/+$/, ""),
@@ -118,6 +118,8 @@ export const CONFIG = Object.freeze({
   },
   /** The identifier of the Auth provider in the Canva Developer Portal (VITE_AUTH_PROVIDER). */
   authProvider: env.VITE_AUTH_PROVIDER || "tunnus",
+  /** Custom label for the church account sign-in button (VITE_SIGN_IN_LABEL). */
+  signInLabel: env.VITE_SIGN_IN_LABEL || "Kirjaudu Tunnuksella",
   get gatewayApiKey() {
     const stored = readStored();
     return typeof stored.gatewayApiKey === "string" && stored.gatewayUrl ? stored.gatewayApiKey : env.VITE_GATEWAY_API_KEY || "";

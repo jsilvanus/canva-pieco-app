@@ -374,18 +374,35 @@ async function getAnnoAppElementClient() {
 
 /**
  * Inserts formatted liturgical text onto the current Canva page.
+ * When `reference` and `body` are both present, creates two distinct elements: one for the reference,
+ * and one for the passage text (without section titles like 'Gospel' or '1st Reading').
  * When `autoUpdate` is true, creates a data-bound AppElement that can be updated in place when the date changes.
  */
 export async function insertTextIntoDesign({ title = "", reference = "", body = "", autoUpdate = false, fieldKey = "", date = "" }) {
-  const heading = [title, reference].filter(Boolean).join(" — ");
-  const fullText = [heading, body].filter(Boolean).join("\n\n");
+  const cleanRef = String(reference || "").trim();
+  const cleanBody = String(body || "").trim();
+  // Remove section titles (Gospel, 1st Reading, etc.) when reference is present
+  const cleanTitle = cleanRef ? "" : String(title || "").trim();
+
+  const fullText = [cleanRef, cleanBody || cleanTitle].filter(Boolean).join("\n\n");
   if (!fullText) return { status: "empty" };
 
   if (!isRunningInCanva()) {
+    if (cleanRef && cleanBody) {
+      return {
+        status: "simulated",
+        mode: autoUpdate ? "app_element" : "richtext",
+        elements: [
+          { type: "reference", text: cleanRef },
+          { type: "body", text: cleanBody },
+        ],
+        text: `${cleanRef}\n\n${cleanBody}`,
+      };
+    }
     return { status: "simulated", mode: autoUpdate ? "app_element" : "richtext", text: fullText };
   }
 
-  const [{ addElementAtPoint, addElementAtCursor, createRichtextRange }, { features }] = await Promise.all([
+  const [{ addElementAtPoint, addElementAtCursor, createRichtextRange, getDefaultPageDimensions }, { features }] = await Promise.all([
     import("@canva/design"),
     import("@canva/platform"),
   ]);
@@ -393,7 +410,7 @@ export async function insertTextIntoDesign({ title = "", reference = "", body = 
   if (autoUpdate) {
     try {
       const client = await getAnnoAppElementClient();
-      const payload = { fieldKey: String(fieldKey || "custom"), date: String(date || ""), title, reference, body };
+      const payload = { fieldKey: String(fieldKey || "custom"), date: String(date || ""), reference: cleanRef, body: cleanBody || cleanTitle };
       if (activeAnnoElement) {
         await activeAnnoElement.update({ data: payload });
       } else {
@@ -405,44 +422,158 @@ export async function insertTextIntoDesign({ title = "", reference = "", body = 
     }
   }
 
-  const range = createRichtextRange();
-  if (heading) {
-    range.appendText(body ? `${heading}\n` : heading, { fontWeight: "bold" });
-  }
-  if (body) {
-    range.appendText(body);
+  // When both reference and body are present, create TWO distinct elements:
+  // 1. Bible passage reference (e.g. "Matt. 21:1–9")
+  // 2. Bible passage text (e.g. "Hoosianna, Daavidin poika!...")
+  if (cleanRef && cleanBody) {
+    const rangeRef = createRichtextRange();
+    rangeRef.appendText(cleanRef, { fontWeight: "bold" });
+
+    const rangeBody = createRichtextRange();
+    rangeBody.appendText(cleanBody);
+
+    if (features.isSupported(addElementAtPoint)) {
+      let pageWidth = 1920;
+      let pageHeight = 1080;
+      if (typeof getDefaultPageDimensions === "function" && features.isSupported(getDefaultPageDimensions)) {
+        try {
+          const dims = await getDefaultPageDimensions();
+          if (dims && typeof dims.width === "number" && typeof dims.height === "number") {
+            pageWidth = dims.width;
+            pageHeight = dims.height;
+          }
+        } catch {
+          // keep defaults
+        }
+      }
+
+      const boxWidth = Math.min(pageWidth - 160, 960);
+      const left = Math.max(40, Math.round((pageWidth - boxWidth) / 2));
+      const topRef = Math.max(40, Math.round(pageHeight * 0.28));
+      const topBody = topRef + 64;
+
+      await addElementAtPoint({
+        type: "richtext",
+        range: rangeRef,
+        top: topRef,
+        left,
+        width: boxWidth,
+      });
+
+      await addElementAtPoint({
+        type: "richtext",
+        range: rangeBody,
+        top: topBody,
+        left,
+        width: boxWidth,
+      });
+
+      return {
+        status: "completed",
+        mode: "richtext",
+        elements: [
+          { type: "reference", text: cleanRef },
+          { type: "body", text: cleanBody },
+        ],
+      };
+    }
+
+    if (features.isSupported(addElementAtCursor)) {
+      await addElementAtCursor({ type: "richtext", range: rangeRef });
+      await addElementAtCursor({ type: "richtext", range: rangeBody });
+      return {
+        status: "completed",
+        mode: "richtext",
+        elements: [
+          { type: "reference", text: cleanRef },
+          { type: "body", text: cleanBody },
+        ],
+      };
+    }
+    return { status: "unsupported" };
   }
 
+  // Single element insertion (e.g. prayer, hallelujah, or single passage text)
+  const singleText = cleanBody || cleanRef || cleanTitle;
+  const range = createRichtextRange();
+  range.appendText(singleText);
+
   if (features.isSupported(addElementAtPoint)) {
-    await addElementAtPoint({ type: "richtext", range });
+    let pageWidth = 1920;
+    let pageHeight = 1080;
+    if (typeof getDefaultPageDimensions === "function" && features.isSupported(getDefaultPageDimensions)) {
+      try {
+        const dims = await getDefaultPageDimensions();
+        if (dims && typeof dims.width === "number" && typeof dims.height === "number") {
+          pageWidth = dims.width;
+          pageHeight = dims.height;
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+    const boxWidth = Math.min(pageWidth - 160, 960);
+    const left = Math.max(40, Math.round((pageWidth - boxWidth) / 2));
+    const top = Math.max(40, Math.round((pageHeight - 200) / 2));
+
+    await addElementAtPoint({
+      type: "richtext",
+      range,
+      top,
+      left,
+      width: boxWidth,
+    });
     return { status: "completed", mode: "richtext" };
   }
+
   if (features.isSupported(addElementAtCursor)) {
     await addElementAtCursor({ type: "richtext", range });
     return { status: "completed", mode: "richtext" };
   }
+
   return { status: "unsupported" };
 }
 
 /**
  * Inserts a liturgical color swatch rectangle onto the current Canva page.
+ * Includes all required box properties (top, left, width, height) to satisfy Canva API requirements.
  */
 export async function insertColorSwatchIntoDesign({ hex, label = "" }) {
   const color = /^#[0-9a-f]{6}$/i.test(String(hex ?? "")) ? String(hex).toLowerCase() : "#7e003e";
   if (!isRunningInCanva()) {
     return { status: "simulated", color, label };
   }
-  const [{ addElementAtPoint }, { features }] = await Promise.all([
+  const [{ addElementAtPoint, getDefaultPageDimensions }, { features }] = await Promise.all([
     import("@canva/design"),
     import("@canva/platform"),
   ]);
+
+  const width = 240;
+  const height = 100;
+  let top = 100;
+  let left = 100;
+
+  if (typeof getDefaultPageDimensions === "function" && features.isSupported(getDefaultPageDimensions)) {
+    try {
+      const dimensions = await getDefaultPageDimensions();
+      if (dimensions && typeof dimensions.width === "number" && typeof dimensions.height === "number") {
+        top = Math.max(20, Math.round((dimensions.height - height) / 2));
+        left = Math.max(20, Math.round((dimensions.width - width) / 2));
+      }
+    } catch {
+      // fallback coordinates
+    }
+  }
+
   if (features.isSupported(addElementAtPoint)) {
     await addElementAtPoint({
       type: "shape",
-      paths: [{ d: "M 0 0 L 200 0 L 200 80 L 0 80 Z", fill: { color } }],
-      viewBox: { top: 0, left: 0, width: 200, height: 80 },
-      width: 200,
-      height: 80,
+      paths: [{ d: `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`, fill: { color } }],
+      viewBox: { top: 0, left: 0, width, height },
+      top,
+      left,
+      width,
+      height,
     });
     return { status: "completed", color };
   }

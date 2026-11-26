@@ -12,6 +12,7 @@ export const CONFIG: Readonly<{
   piDiscoveryUrl: string;
   tunnusSignIn: boolean;
   authProvider: string;
+  signInLabel: string;
 }>;
 export function normalizeGatewayUrl(value: string | null | undefined): string | null;
 export function saveRuntimeSettings(settings: {

@@ -35,7 +35,12 @@ export function insertTextIntoDesign(opts: {
   autoUpdate?: boolean;
   fieldKey?: string;
   date?: string;
-}): Promise<{ status: string; mode?: string; text?: string }>;
+}): Promise<{
+  status: string;
+  mode?: string;
+  text?: string;
+  elements?: { type: string; text: string }[];
+}>;
 export function insertColorSwatchIntoDesign(opts: { hex: string; label?: string }): Promise<{ status: string; color?: string }>;
 export function autofillDesignWithAnnoTable(dataTable: unknown): Promise<{ status: string }>;
 export function importImageUrlIntoDesign(opts: { url: string; title?: string; mimeType?: string }): Promise<{ status: string }>;

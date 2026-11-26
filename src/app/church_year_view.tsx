@@ -293,7 +293,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "Gospel", description: "Gospel title" }),
                       reference: texts.gospel?.reference || "",
                       body: texts.gospel?.text || "",
                       fieldKey: "gospelText",
@@ -328,7 +327,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "1st Reading", description: "1st reading title" }),
                       reference: texts.firstReading?.reference || "",
                       body: texts.firstReading?.text || "",
                       fieldKey: "firstReadingText",
@@ -363,7 +361,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "2nd Reading", description: "2nd reading title" }),
                       reference: texts.secondReading?.reference || "",
                       body: texts.secondReading?.text || "",
                       fieldKey: "secondReadingText",
@@ -405,7 +402,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "Psalm", description: "Psalm title" }),
                       reference: psalm.reference || "",
                       body: [psalm.antiphon ? `Antifoni: ${psalm.antiphon}` : "", psalm.text].filter(Boolean).join("\n\n"),
                       fieldKey: "psalmText",
@@ -437,7 +433,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "Hallelujah", description: "Hallelujah title" }),
                       body: hallelujah,
                       fieldKey: "hallelujahText",
                     })
@@ -468,7 +463,6 @@ export function ChurchYearView({ notify }: Props) {
                   size="small"
                   onClick={() =>
                     handleInsert({
-                      title: intl.formatMessage({ defaultMessage: "Prayer", description: "Prayer title" }),
                       body: prayers[0].text,
                       fieldKey: "collectPrayer",
                     })

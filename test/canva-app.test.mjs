@@ -23,7 +23,8 @@ import {
 beforeEach(() => {
   // Use instant mock fetch during unit tests to avoid network timeouts
   setFetchImpl(async (url, init = {}) => {
-    const path = new URL(url).pathname;
+    const rawPath = new URL(url).pathname;
+    const path = rawPath.replace(/^\/canva/, "");
     const body = init.body ? JSON.parse(init.body) : {};
 
     if (path === "/api/v1/canva/push") {
@@ -332,7 +333,7 @@ test("pushContent sends useAt, setupPresentation sends piOutput only when set", 
   await pushContent({ title: "A", pages: [{ pageNumber: 1, url: "x" }], useAt: ["2026-11-08", "2026-11-15"] });
   await setupPresentation({ presentationId: "p", pipelineId: "pipgm1", matrixRoute: "none" });
   await setupPresentation({ presentationId: "p", pipelineId: "pipgm1", matrixRoute: "none", piOutput: "pi2" });
-  assert.equal(bodies[0].path, "/api/v1/canva/push");
+  assert.ok(bodies[0].path.endsWith("/api/v1/canva/push"));
   assert.deepEqual(bodies[0].body.useAt, ["2026-11-08", "2026-11-15"]);
   assert.equal("piOutput" in bodies[1].body, false);
   assert.equal(bodies[2].body.piOutput, "pi2");
@@ -362,7 +363,7 @@ test("createGoLiveList posts the steps to the Canva action list route and return
   });
   const list = await createGoLiveList({ itemId: "itm_1", title: "Sunday", feed: "pipgm1", piOutput: "pi1", projector: "left", ftb: false });
   assert.equal(list.link, "https://pc.example/run/u-1");
-  assert.equal(seen[0].path, "/api/v1/canva/action-lists");
+  assert.ok(seen[0].path.endsWith("/api/v1/canva/action-lists"));
   assert.equal(seen[0].method, "POST");
   assert.equal(seen[0].body.steps.length, 5);
 });

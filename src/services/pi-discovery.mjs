@@ -347,3 +347,88 @@ export async function listDiscoveredExportTargets({
     return [];
   }
 }
+
+/**
+ * @typedef {Object} DiscoveryCatalog
+ * @property {DiscoveredService[]} piGateways
+ * @property {DiscoveredService[]} signageServices
+ * @property {DiscoveredService[]} valopankkiServices
+ * @property {DiscoveredService[]} annoServices
+ * @property {DiscoveredService[]} all
+ */
+
+/**
+ * Discovers all active church services (Pi Gateways, Sissi/Signage, Valopankki, Anno) from Tunnus Discovery API.
+ *
+ * @param {Object} [options]
+ * @param {string} [options.discoveryUrl]
+ * @param {typeof fetch} [options.fetch]
+ * @param {AbortSignal} [options.signal]
+ * @returns {Promise<DiscoveryCatalog>}
+ */
+export async function discoverAllServices({
+  discoveryUrl = CONFIG.piDiscoveryUrl || CONFIG.tunnusUrl,
+  fetch: fetchFn = globalThis.fetch,
+  signal,
+} = {}) {
+  /** @type {DiscoveryCatalog} */
+  const result = {
+    piGateways: [],
+    signageServices: [],
+    valopankkiServices: [],
+    annoServices: [],
+    all: [],
+  };
+
+  const normalizedDiscovery = normalizeGatewayUrl(discoveryUrl);
+  if (!normalizedDiscovery || typeof fetchFn !== "function") {
+    return result;
+  }
+
+  try {
+    const token = await getBearerToken().catch(() => null);
+    /** @type {Record<string, string>} */
+    const headers = { Accept: "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetchFn(`${normalizedDiscovery}/api/v1/discovery`, {
+      method: "GET",
+      headers,
+      signal,
+    });
+    if (!res.ok) return result;
+
+    const data = await res.json();
+    const list = Array.isArray(data?.services)
+      ? data.services
+      : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data)
+      ? data
+      : [];
+
+    result.all = list;
+    for (const service of list) {
+      if (!service || typeof service !== "object") continue;
+      const type = String(service.type || "").toLowerCase();
+      const caps = Array.isArray(service.capabilities) ? service.capabilities : [];
+
+      if (type === "piprogram" || type === "pigateway" || caps.includes("slides") || caps.includes("stage_display")) {
+        result.piGateways.push(service);
+      }
+      if (type === "signage" || caps.includes("screen_push") || caps.includes("playlist_management")) {
+        result.signageServices.push(service);
+      }
+      if (type === "valopankki" || caps.includes("asset_library") || caps.includes("media_bank")) {
+        result.valopankkiServices.push(service);
+      }
+      if (type === "anno" || type === "vuosi" || caps.includes("church_year") || caps.includes("calendar")) {
+        result.annoServices.push(service);
+      }
+    }
+  } catch {
+    // Return partial or empty catalog on network error
+  }
+
+  return result;
+}

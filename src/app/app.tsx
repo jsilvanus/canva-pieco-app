@@ -180,7 +180,7 @@ export function App() {
                   </Columns>
                 ) : (
                   <Button variant="secondary" onClick={onSignIn} loading={signingIn} disabled={signingIn} stretch>
-                    {intl.formatMessage({ defaultMessage: "Sign in with the church account", description: "Opens the church sign-in window" })}
+                    {CONFIG.signInLabel || intl.formatMessage({ defaultMessage: "Kirjaudu Tunnuksella", description: "Opens the church sign-in window" })}
                   </Button>
                 )}
                 {account.state === "no-access" && (

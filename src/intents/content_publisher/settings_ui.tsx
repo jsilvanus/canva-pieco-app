@@ -251,7 +251,7 @@ export function SettingsUi({ invocationContext, updatePublishSettings, registerO
         <Rows spacing="1u">
           {account.state === "signed-out" ? (
             <Button variant="secondary" onClick={onSignIn} loading={signingIn} disabled={signingIn} stretch>
-              {intl.formatMessage({ defaultMessage: "Sign in with the church account", description: "Opens the church sign-in window" })}
+              {CONFIG.signInLabel || intl.formatMessage({ defaultMessage: "Kirjaudu Tunnuksella", description: "Opens the church sign-in window" })}
             </Button>
           ) : (
             <Columns spacing="1u" alignY="center">

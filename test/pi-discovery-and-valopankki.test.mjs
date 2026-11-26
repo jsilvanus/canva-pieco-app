@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   listPiSystems,
   listValopankkiInstances,
+  discoverAllServices,
   resolveExportTargetIngestUrl,
   resolveExportTargetAuth,
   listDiscoveredExportTargets,
@@ -19,7 +20,12 @@ import {
   clearAssetsUsedInDesign,
   reportValopankkiExport,
 } from "../src/services/valopankki-api.mjs";
-import { inspectCurrentDesignElements } from "../src/services/canva-sdk.mjs";
+import {
+  inspectCurrentDesignElements,
+  insertTextIntoDesign,
+  insertColorSwatchIntoDesign,
+} from "../src/services/canva-sdk.mjs";
+import { CONFIG } from "../src/config.mjs";
 import {
   getOverwriteTarget,
   setOverwriteTarget,
@@ -484,4 +490,98 @@ test("listValopankkiInstances discovers multiple Valopankki repositories", async
   assert.equal(instances[1].id, "riihimaki-valopankki");
   assert.equal(instances[2].id, "nuorisotila-valopankki");
   assert.equal(instances[2].venue, "nuorisotila");
+});
+
+test("discoverAllServices populates gateways, signage, valopankki, and anno catalogs", async () => {
+  const mockDiscovery = {
+    updated_at: "2026-11-26T18:00:00Z",
+    services: [
+      {
+        id: "keskuskirkko-piprogram",
+        name: "Keskuskirkko — Sali (Pi Program)",
+        type: "piprogram",
+        venue: "keskuskirkko",
+        endpoint_url: "https://gateway.keskuskirkko.riihimaenseurakunta.fi:8443/program",
+        capabilities: ["slides", "stage_display"],
+      },
+      {
+        id: "sissi-signage",
+        name: "Kyltti / Sissi Infonäytöt",
+        type: "signage",
+        venue: "parish-wide",
+        endpoint_url: "https://kehitys.riihimaenseurakunta.fi/sissi",
+        capabilities: ["screen_push"],
+      },
+      {
+        id: "valopankki-main",
+        name: "Valopankki Kuvapankki",
+        type: "valopankki",
+        venue: "parish-wide",
+        endpoint_url: "https://kehitys.riihimaenseurakunta.fi/valopankki",
+        capabilities: ["asset_library"],
+      },
+      {
+        id: "anno-vuosi",
+        name: "Kirkkovuosi Anno",
+        type: "anno",
+        venue: "parish-wide",
+        endpoint_url: "https://kehitys.riihimaenseurakunta.fi/vuosi",
+        capabilities: ["church_year"],
+      },
+    ],
+  };
+
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => mockDiscovery,
+  });
+
+  const catalog = await discoverAllServices({
+    discoveryUrl: "https://tunnus.riihimaenseurakunta.fi",
+    fetch: mockFetch,
+  });
+
+  assert.equal(catalog.all.length, 4);
+  assert.equal(catalog.piGateways.length, 1);
+  assert.equal(catalog.piGateways[0].id, "keskuskirkko-piprogram");
+  assert.equal(catalog.signageServices.length, 1);
+  assert.equal(catalog.signageServices[0].id, "sissi-signage");
+  assert.equal(catalog.valopankkiServices.length, 1);
+  assert.equal(catalog.valopankkiServices[0].id, "valopankki-main");
+  assert.equal(catalog.annoServices.length, 1);
+  assert.equal(catalog.annoServices[0].id, "anno-vuosi");
+});
+
+test("insertColorSwatchIntoDesign simulates swatch insertion with valid hex color", async () => {
+  const res1 = await insertColorSwatchIntoDesign({ hex: "#008844", label: "Vihreä" });
+  assert.equal(res1.status, "simulated");
+  assert.equal(res1.color, "#008844");
+
+  const resDefault = await insertColorSwatchIntoDesign({ hex: "invalid" });
+  assert.equal(resDefault.color, "#7e003e");
+});
+
+test("insertTextIntoDesign removes titles and produces two elements for reference and body", async () => {
+  const res = await insertTextIntoDesign({
+    title: "Gospel",
+    reference: "Matt. 21:1–9",
+    body: "Hoosianna, Daavidin poika!",
+  });
+
+  assert.equal(res.status, "simulated");
+  assert.ok(res.elements, "Expected elements array to be returned");
+  assert.equal(res.elements.length, 2);
+  assert.equal(res.elements[0].type, "reference");
+  assert.equal(res.elements[0].text, "Matt. 21:1–9");
+  assert.equal(res.elements[1].type, "body");
+  assert.equal(res.elements[1].text, "Hoosianna, Daavidin poika!");
+  // Title "Gospel" must not be present in the text
+  assert.ok(!res.text.includes("Gospel"));
+});
+
+test("CONFIG provides production default gatewayUrl and church account sign-in label", () => {
+  assert.equal(CONFIG.signInLabel, "Kirjaudu Tunnuksella");
+  assert.ok(CONFIG.gatewayUrl.startsWith("https://"));
+  assert.ok(CONFIG.gatewayUrl.includes("kehitys.riihimaenseurakunta.fi/canva") || CONFIG.gatewayUrl.includes("gateway"));
 });

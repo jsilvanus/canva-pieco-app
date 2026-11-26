@@ -100,4 +100,18 @@ export function listDiscoveredExportTargets(options?: {
   signal?: AbortSignal;
 }): Promise<DiscoveredExportTarget[]>;
 
+export interface DiscoveryCatalog {
+  piGateways: DiscoveredService[];
+  signageServices: DiscoveredService[];
+  valopankkiServices: DiscoveredService[];
+  annoServices: DiscoveredService[];
+  all: DiscoveredService[];
+}
+
+export function discoverAllServices(options?: {
+  discoveryUrl?: string;
+  fetch?: typeof fetch;
+  signal?: AbortSignal;
+}): Promise<DiscoveryCatalog>;
+
 export function listPiSystems(options?: ListPiSystemsOptions): Promise<PiSystemEndpoint[]>;
