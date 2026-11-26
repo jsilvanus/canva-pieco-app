@@ -24,6 +24,7 @@ import {
   inspectCurrentDesignElements,
   insertTextIntoDesign,
   insertColorSwatchIntoDesign,
+  getCanvaBrandKitPalettes,
 } from "../src/services/canva-sdk.mjs";
 import { CONFIG } from "../src/config.mjs";
 import {
@@ -594,4 +595,12 @@ test("CONFIG provides production default gatewayUrl and church account sign-in l
   assert.equal(CONFIG.signInLabel, "Kirjaudu Tunnuksella");
   assert.ok(CONFIG.gatewayUrl.startsWith("https://"));
   assert.ok(CONFIG.gatewayUrl.includes("kehitys.riihimaenseurakunta.fi/canva") || CONFIG.gatewayUrl.includes("gateway"));
+});
+
+test("getCanvaBrandKitPalettes returns brand palettes with solid hex colors", async () => {
+  const palettes = await getCanvaBrandKitPalettes();
+  assert.ok(Array.isArray(palettes));
+  assert.ok(palettes.length > 0);
+  assert.ok(palettes[0].colors.length > 0);
+  assert.ok(palettes[0].colors[0].hex.startsWith("#"));
 });

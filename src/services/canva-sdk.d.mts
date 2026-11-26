@@ -44,3 +44,9 @@ export function insertTextIntoDesign(opts: {
 export function insertColorSwatchIntoDesign(opts: { hex: string; label?: string }): Promise<{ status: string; color?: string }>;
 export function autofillDesignWithAnnoTable(dataTable: unknown): Promise<{ status: string }>;
 export function importImageUrlIntoDesign(opts: { url: string; title?: string; mimeType?: string }): Promise<{ status: string }>;
+
+export interface CanvaBrandPalette {
+  name: string;
+  colors: { hex: string; name: string }[];
+}
+export function getCanvaBrandKitPalettes(): Promise<CanvaBrandPalette[]>;

@@ -634,3 +634,59 @@ export async function importImageUrlIntoDesign({ url, title = "PiProgram slide",
   }
   return { status: "unsupported" };
 }
+
+/**
+ * @typedef {Object} CanvaBrandPalette
+ * @property {string} name
+ * @property {{ hex: string; name: string }[]} colors
+ */
+
+/**
+ * Retrieves the Canva Brand Kit color palettes using Canva Apps SDK (`getBrandKitColors`).
+ * Returns an array of palettes containing solid hex colors.
+ *
+ * @returns {Promise<CanvaBrandPalette[]>}
+ */
+export async function getCanvaBrandKitPalettes() {
+  if (!isRunningInCanva()) {
+    return [
+      {
+        name: "Kirkon brändipaletti (Canva Brand Kit)",
+        colors: [
+          { hex: "#7E003E", name: "Kirkon violetti" },
+          { hex: "#FFFFFF", name: "Valkoinen" },
+          { hex: "#2E7D32", name: "Kirkon vihreä" },
+          { hex: "#1565C0", name: "Sininen" },
+        ],
+      },
+    ];
+  }
+
+  try {
+    const [{ getBrandKitColors }, { features }] = await Promise.all([
+      import("@canva/design"),
+      import("@canva/platform"),
+    ]);
+
+    if (typeof getBrandKitColors === "function" && features.isSupported(getBrandKitColors)) {
+      const res = await getBrandKitColors();
+      if (Array.isArray(res?.palettes) && res.palettes.length > 0) {
+        return res.palettes
+          .map((palette, pIdx) => ({
+            name: `Brändipaletti ${pIdx + 1}`,
+            colors: (palette.colors || [])
+              .filter((c) => c && c.type === "solid" && typeof c.hex === "string")
+              .map((c) => ({
+                hex: c.hex.toUpperCase(),
+                name: c.hex.toUpperCase(),
+              })),
+          }))
+          .filter((p) => p.colors.length > 0);
+      }
+    }
+  } catch {
+    // Brand kit permissions or plan not active
+  }
+
+  return [];
+}

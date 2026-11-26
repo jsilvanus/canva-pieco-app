@@ -22,7 +22,9 @@ import {
   getDesignTitle,
   inspectCurrentDesignElements,
   insertColorSwatchIntoDesign,
+  getCanvaBrandKitPalettes,
 } from "../services/canva-sdk.mjs";
+import type { CanvaBrandPalette } from "../services/canva-sdk.d.mts";
 import { listValopankkiInstances } from "../services/pi-discovery.mjs";
 import type { ValopankkiInstance } from "../services/pi-discovery.d.mts";
 import {
@@ -38,7 +40,6 @@ import type {
   TrackedDesignAsset,
   ValopankkiAssetKind,
   ValopankkiAssetSummary,
-  ValopankkiBrandColor,
   ValopankkiBrandKit,
 } from "../services/valopankki-api.d.mts";
 import type { NoticeTone } from "./types";
@@ -46,16 +47,6 @@ import type { NoticeTone } from "./types";
 type Props = {
   notify: (msg: string, tone?: NoticeTone) => void;
 };
-
-const FALLBACK_PALETTE: ValopankkiBrandColor[] = [
-  { name: "Kirkon violetti (Pääväri)", hex: "#7E003E", role: "primary" },
-  { name: "Valkoinen / Kulta", hex: "#FFFFFF", role: "secondary" },
-  { name: "Vihreä (Arjen aika)", hex: "#2E7D32", role: "accent" },
-  { name: "Liturginen violetti", hex: "#6A1B9A", role: "accent" },
-  { name: "Sininen (Adventti/Maria)", hex: "#1565C0", role: "accent" },
-  { name: "Punainen (Helluntai/Marttyyrit)", hex: "#C62828", role: "accent" },
-  { name: "Musta (Pitkäperjantai)", hex: "#212121", role: "background" },
-];
 
 export function ValopankkiView({ notify }: Props) {
   const intl = useIntl();
@@ -87,9 +78,23 @@ export function ValopankkiView({ notify }: Props) {
   const [inspectingCanvas, setInspectingCanvas] = useState<boolean>(false);
   const [lastReported, setLastReported] = useState<{ count: number; target: string; time: string } | null>(null);
 
+  // Canva Brand Kit Palettes state
+  const [brandPalettes, setBrandPalettes] = useState<CanvaBrandPalette[]>([]);
+  const [loadingPalettes, setLoadingPalettes] = useState<boolean>(false);
+
   // Multi-Valopankki discovery
   const [instances, setInstances] = useState<ValopankkiInstance[]>([]);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string>("primary");
+
+  useEffect(() => {
+    if (tab === "brand") {
+      setLoadingPalettes(true);
+      void getCanvaBrandKitPalettes()
+        .then((palettes) => setBrandPalettes(palettes))
+        .catch(() => setBrandPalettes([]))
+        .finally(() => setLoadingPalettes(false));
+    }
+  }, [tab]);
 
   useEffect(() => {
     void listValopankkiInstances().then((list) => {
@@ -308,8 +313,6 @@ export function ValopankkiView({ notify }: Props) {
     }
   };
 
-  const colors = brandKit?.colors && brandKit.colors.length > 0 ? brandKit.colors : FALLBACK_PALETTE;
-
   return (
     <Rows spacing="2u">
       <Box padding="1.5u" background="neutralSubtle">
@@ -396,37 +399,59 @@ export function ValopankkiView({ notify }: Props) {
           )}
 
           <Text size="small">
-            <strong>{intl.formatMessage({ defaultMessage: "Parish & Liturgical Colors", description: "Color palette header" })}</strong>
+            <strong>{intl.formatMessage({ defaultMessage: "Canva Brand Kit Colors", description: "Color palette header" })}</strong>
           </Text>
 
-          <Rows spacing="1u">
-            {colors.map((color) => (
-              <Box key={color.hex} padding="1u" background="neutralSubtle">
-                <Columns spacing="1u" alignY="center">
-                  <Column width="content">
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 4,
-                        backgroundColor: color.hex,
-                        border: "1px solid rgba(0,0,0,0.15)",
-                      }}
-                    />
-                  </Column>
-                  <Column>
-                    <Text size="small"><strong>{color.name}</strong></Text>
-                    <Text size="xsmall" tone="tertiary">{color.hex}</Text>
-                  </Column>
-                  <Column width="content">
-                    <Button variant="tertiary" size="small" onClick={() => void handleInsertColor(color.hex, color.name)}>
-                      {intl.formatMessage({ defaultMessage: "Insert", description: "Insert color swatch" })}
-                    </Button>
-                  </Column>
-                </Columns>
-              </Box>
-            ))}
-          </Rows>
+          {loadingPalettes ? (
+            <Text size="xsmall" tone="secondary">
+              {intl.formatMessage({ defaultMessage: "Loading Brand Kit colors…", description: "Loading indicator for brand palettes" })}
+            </Text>
+          ) : brandPalettes.length > 0 ? (
+            <Rows spacing="1.5u">
+              {brandPalettes.map((palette, pIdx) => (
+                <Rows key={palette.name || pIdx} spacing="1u">
+                  {palette.name && (
+                    <Text size="xsmall" tone="secondary">
+                      {palette.name}
+                    </Text>
+                  )}
+                  {palette.colors.map((color) => (
+                    <Box key={color.hex} padding="1u" background="neutralSubtle">
+                      <Columns spacing="1u" alignY="center">
+                        <Column width="content">
+                          <div
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: 4,
+                              backgroundColor: color.hex,
+                              border: "1px solid rgba(0,0,0,0.15)",
+                            }}
+                          />
+                        </Column>
+                        <Column>
+                          <Text size="small"><strong>{color.name}</strong></Text>
+                          <Text size="xsmall" tone="tertiary">{color.hex}</Text>
+                        </Column>
+                        <Column width="content">
+                          <Button variant="tertiary" size="small" onClick={() => void handleInsertColor(color.hex, color.name)}>
+                            {intl.formatMessage({ defaultMessage: "Insert", description: "Insert color swatch" })}
+                          </Button>
+                        </Column>
+                      </Columns>
+                    </Box>
+                  ))}
+                </Rows>
+              ))}
+            </Rows>
+          ) : (
+            <Alert tone="info">
+              {intl.formatMessage({
+                defaultMessage: "No Canva Brand Kit palettes found. Configure your team's Brand Kit in Canva to see your brand colors here.",
+                description: "Notice when Canva Brand Kit has no palettes",
+              })}
+            </Alert>
+          )}
 
           {brandKit?.logos && brandKit.logos.length > 0 && (
             <Rows spacing="1u">
