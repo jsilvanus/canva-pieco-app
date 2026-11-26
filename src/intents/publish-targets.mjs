@@ -69,6 +69,14 @@ export function signageFallbackSize(orientation) {
 }
 
 function withOptions(target, options) {
+  if (target?.id === "saarnavideo") {
+    const isEnabled = Boolean(options?.saarnavideoUrl || options?.hasDiscoveredSaarnavideo || options?.enableSaarnavideo);
+    return {
+      ...target,
+      displayName: isEnabled ? "Saarnavideo (Sermon Video)" : target.displayName,
+      enabled: isEnabled,
+    };
+  }
   if (target?.kind !== "signage" && target?.kind !== "signage-view") return target;
   return { ...target, enabled: Boolean(String(options?.signageUrl ?? "").trim()) };
 }

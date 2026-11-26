@@ -105,6 +105,7 @@ export interface DiscoveryCatalog {
   signageServices: DiscoveredService[];
   valopankkiServices: DiscoveredService[];
   annoServices: DiscoveredService[];
+  saarnavideoServices: DiscoveredService[];
   all: DiscoveredService[];
 }
 

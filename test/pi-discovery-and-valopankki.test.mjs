@@ -528,6 +528,14 @@ test("discoverAllServices populates gateways, signage, valopankki, and anno cata
         endpoint_url: "https://kehitys.riihimaenseurakunta.fi/vuosi",
         capabilities: ["church_year"],
       },
+      {
+        id: "saarnavideo-archive",
+        name: "Saarnavideo Arkisto",
+        type: "saarnavideo",
+        venue: "parish-wide",
+        endpoint_url: "https://kehitys.riihimaenseurakunta.fi/saarna",
+        capabilities: ["video_archive", "export_target"],
+      },
     ],
   };
 
@@ -542,7 +550,7 @@ test("discoverAllServices populates gateways, signage, valopankki, and anno cata
     fetch: mockFetch,
   });
 
-  assert.equal(catalog.all.length, 4);
+  assert.equal(catalog.all.length, 5);
   assert.equal(catalog.piGateways.length, 1);
   assert.equal(catalog.piGateways[0].id, "keskuskirkko-piprogram");
   assert.equal(catalog.signageServices.length, 1);
@@ -551,6 +559,8 @@ test("discoverAllServices populates gateways, signage, valopankki, and anno cata
   assert.equal(catalog.valopankkiServices[0].id, "valopankki-main");
   assert.equal(catalog.annoServices.length, 1);
   assert.equal(catalog.annoServices[0].id, "anno-vuosi");
+  assert.equal(catalog.saarnavideoServices.length, 1);
+  assert.equal(catalog.saarnavideoServices[0].id, "saarnavideo-archive");
 });
 
 test("insertColorSwatchIntoDesign simulates swatch insertion with valid hex color", async () => {

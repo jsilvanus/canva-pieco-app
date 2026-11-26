@@ -52,7 +52,12 @@ export type SignageSettings = {
   /** true = the slides go live at once (needs the operate right); false = added disabled. */
   enableNow?: boolean;
 };
-export type TargetOptions = { signageUrl?: string };
+export type TargetOptions = {
+  signageUrl?: string;
+  saarnavideoUrl?: string;
+  hasDiscoveredSaarnavideo?: boolean;
+  enableSaarnavideo?: boolean;
+};
 export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video"; name?: string };
 export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; headline?: string; caption?: string; link?: string };
 export function getTargets(options?: TargetOptions): Target[];

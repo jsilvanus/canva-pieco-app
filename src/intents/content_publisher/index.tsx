@@ -17,6 +17,8 @@ import { renderInCanva } from "../../app/mount";
 import { getTargets, targetById, validatePublishSettings, decodePublishRef, buildPushPayload } from "../publish-targets.mjs";
 import type { Target } from "../publish-targets.mjs";
 import { isSignageTarget, publishSignageContent } from "./signage-publisher.mjs";
+import { listDiscoveredExportTargets } from "../../services/pi-discovery.mjs";
+import type { DiscoveredExportTarget } from "../../services/pi-discovery.d.mts";
 import { SettingsUi } from "./settings_ui";
 import { PreviewUi } from "./preview_ui";
 
@@ -49,9 +51,48 @@ function outputTypeFor(target: Target): OutputTypeConfiguration {
   };
 }
 
+function outputTypeForDiscovered(target: DiscoveredExportTarget): OutputTypeConfiguration {
+  const accepts = {
+    ...(target.formats.includes("png") || target.formats.includes("jpeg") ? { image: { format: "png" as const } } : {}),
+    ...(target.formats.includes("mp4") ? { video: { format: "mp4" as const } } : {}),
+  };
+  return {
+    id: target.targetId,
+    displayName: `${target.serviceName} — ${target.name}`,
+    contentNoun: "content",
+    mediaSlots: [
+      {
+        id: "slides",
+        displayName: target.category === "video" ? "Video" : "Slides",
+        fileCount: target.multiPage ? { min: 1 } : { exact: 1 },
+        accepts: Object.keys(accepts).length > 0 ? accepts : { image: { format: "png" as const } },
+      },
+    ],
+  };
+}
+
 async function getPublishConfiguration(): Promise<GetPublishConfigurationResponse> {
-  const targets = getTargets({ signageUrl: CONFIG.signageUrl }).filter((t) => (t.kind !== "signage" && t.kind !== "signage-view") || t.enabled);
-  return { status: "completed", outputTypes: targets.map(outputTypeFor) };
+  let discoveredTargets: DiscoveredExportTarget[] = [];
+  try {
+    discoveredTargets = await listDiscoveredExportTargets();
+  } catch {
+    // Discovery offline fallback
+  }
+
+  const hasDiscoveredSaarna = discoveredTargets.some((t) => t.category === "video" || t.targetId.includes("saarna"));
+  const staticTargets = getTargets({ signageUrl: CONFIG.signageUrl, hasDiscoveredSaarnavideo: hasDiscoveredSaarna }).filter(
+    (t) => (t.kind !== "signage" && t.kind !== "signage-view" && t.id !== "saarnavideo") || t.enabled
+  );
+
+  const outputTypes: OutputTypeConfiguration[] = staticTargets.map(outputTypeFor);
+
+  for (const dt of discoveredTargets) {
+    if (!outputTypes.some((o) => o.id === dt.targetId)) {
+      outputTypes.push(outputTypeForDiscovered(dt));
+    }
+  }
+
+  return { status: "completed", outputTypes };
 }
 
 function renderSettingsUi(request: RenderSettingsUiRequest) {

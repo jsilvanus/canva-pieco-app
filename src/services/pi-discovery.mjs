@@ -354,11 +354,12 @@ export async function listDiscoveredExportTargets({
  * @property {DiscoveredService[]} signageServices
  * @property {DiscoveredService[]} valopankkiServices
  * @property {DiscoveredService[]} annoServices
+ * @property {DiscoveredService[]} saarnavideoServices
  * @property {DiscoveredService[]} all
  */
 
 /**
- * Discovers all active church services (Pi Gateways, Sissi/Signage, Valopankki, Anno) from Tunnus Discovery API.
+ * Discovers all active church services (Pi Gateways, Sissi/Signage, Valopankki, Anno, Saarnavideo) from Tunnus Discovery API.
  *
  * @param {Object} [options]
  * @param {string} [options.discoveryUrl]
@@ -377,6 +378,7 @@ export async function discoverAllServices({
     signageServices: [],
     valopankkiServices: [],
     annoServices: [],
+    saarnavideoServices: [],
     all: [],
   };
 
@@ -424,6 +426,9 @@ export async function discoverAllServices({
       }
       if (type === "anno" || type === "vuosi" || caps.includes("church_year") || caps.includes("calendar")) {
         result.annoServices.push(service);
+      }
+      if (type === "saarnavideo" || caps.includes("video_archive") || caps.includes("sermon_video")) {
+        result.saarnavideoServices.push(service);
       }
     }
   } catch {
