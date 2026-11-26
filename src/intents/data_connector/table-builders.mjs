@@ -313,6 +313,50 @@ export function buildYearCalendarTable(calendarResponse, { headerLang = "fi", li
   return applyTableLimits(cols, rows, limit);
 }
 
+export function buildEventsTable(eventsList, { limit } = {}) {
+  const cols = [
+    { name: "Otsikko", type: "string" },
+    { name: "Päivä", type: "string" },
+    { name: "Klo", type: "string" },
+    { name: "Aika ja paikka", type: "string" },
+    { name: "Paikka", type: "string" },
+    { name: "Osoite", type: "string" },
+    { name: "Kuvaus", type: "string" },
+    { name: "Lyhyt kuvaus", type: "string" },
+    { name: "Kategoria", type: "string" },
+    { name: "Linkki", type: "string" },
+    { name: "Päivämäärä", type: "date" },
+  ];
+  const rows = (eventsList ?? []).map((ev) => {
+    const timeAndVenue = ev.slide_snippets?.time_and_venue || `${ev.date_display} ${ev.time_display} • ${ev.venue}`;
+    const desc = ev.description_clean || "";
+    const shortDesc = ev.slide_snippets?.short_body || desc;
+    let epochSec;
+    try {
+      const ms = Date.parse(ev.start_time);
+      epochSec = Number.isFinite(ms) ? Math.floor(ms / 1000) : undefined;
+    } catch {
+      epochSec = undefined;
+    }
+    return {
+      cells: [
+        strCell(ev.title),
+        strCell(ev.date_display),
+        strCell(ev.time_display),
+        strCell(timeAndVenue),
+        strCell(ev.venue),
+        strCell(ev.venue_address),
+        strCell(desc),
+        strCell(shortDesc),
+        strCell(ev.category),
+        strCell(ev.link_url),
+        { type: "date", value: epochSec },
+      ],
+    };
+  });
+  return applyTableLimits(cols, rows, limit);
+}
+
 export function parseDataSourceRef(source) {
   const fallback = { v: 1, preset: "day_details", date: todayIso(), endDate: "", year: new Date().getFullYear(), slug: "", headerLang: "fi" };
   if (!source || typeof source !== "string") return fallback;

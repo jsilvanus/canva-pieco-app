@@ -8,6 +8,7 @@ export const CONFIG: Readonly<{
   signagePushKey: string;
   annoUrl: string;
   valopankkiUrl: string;
+  katrinaUrl: string;
   tunnusUrl: string;
   piDiscoveryUrl: string;
   tunnusSignIn: boolean;
@@ -22,6 +23,7 @@ export function saveRuntimeSettings(settings: {
   signagePushKey?: string;
   annoUrl?: string;
   valopankkiUrl?: string;
+  katrinaUrl?: string;
   piDiscoveryUrl?: string;
 }): void;
 export function clearRuntimeSettings(): void;

@@ -23,11 +23,12 @@ import type { NoticeTone } from "./types";
 import { ChurchYearView } from "./church_year_view";
 import { PiProgramLibraryView } from "./piprogram_library_view";
 import { ValopankkiView } from "./valopankki_view";
+import { EventsView } from "./events_view";
 import { SettingsForm } from "./settings_form";
 
 const HEALTH_INTERVAL_MS = 15000;
 
-export type AppCollectionMode = "kirkkovuosi" | "piprogram" | "valopankki";
+export type AppCollectionMode = "kirkkovuosi" | "piprogram" | "valopankki" | "events";
 
 /** The design panel: 3 church collections (Kirkkovuosi, PiProgram, Valopankki). */
 export function App() {
@@ -213,6 +214,10 @@ export function App() {
                   value: "valopankki",
                   label: intl.formatMessage({ defaultMessage: "Valopankki", description: "Valopankki media and branding collection" }),
                 },
+                {
+                  value: "events",
+                  label: intl.formatMessage({ defaultMessage: "Tapahtumat", description: "Events and calendar collection" }),
+                },
               ]}
             />
 
@@ -232,6 +237,9 @@ export function App() {
               </Box>
               <Box display={collection === "valopankki" ? "block" : "none"}>
                 <ValopankkiView notify={notify} />
+              </Box>
+              <Box display={collection === "events" ? "block" : "none"}>
+                <EventsView notify={notify} />
               </Box>
             </Box>
           </>

@@ -36,4 +36,8 @@ export function buildYearCalendarTable(
   calendarResponse: AnnoCalendarResponse,
   opts?: { headerLang?: HeaderLang; limit?: DataTableLimit },
 ): DataTable;
+export function buildEventsTable(
+  eventsList: any[],
+  opts?: { limit?: DataTableLimit },
+): DataTable;
 export function parseDataSourceRef(source: string | undefined): AnnoDataQuery;

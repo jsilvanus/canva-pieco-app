@@ -41,7 +41,7 @@ export function normalizeGatewayUrl(value) {
  * stored; an empty string removes it; anything else must pass normalizeGatewayUrl (https only, a
  * path prefix such as https://host/signage is kept). `signagePushKey` follows the same rule.
  */
-export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey, annoUrl, valopankkiUrl, piDiscoveryUrl }) {
+export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, signagePushKey, annoUrl, valopankkiUrl, piDiscoveryUrl, katrinaUrl }) {
   const url = normalizeGatewayUrl(gatewayUrl);
   if (!url) throw new Error("The gateway address must be an https address, for example https://gateway.example.org");
   const previous = readStored();
@@ -63,6 +63,10 @@ export function saveRuntimeSettings({ gatewayUrl, gatewayApiKey, signageUrl, sig
   const discovery = piDiscoveryUrl === undefined ? previous.piDiscoveryUrl : String(piDiscoveryUrl ?? "").trim() ? normalizeGatewayUrl(piDiscoveryUrl) : "";
   if (discovery === null) throw new Error("The Pi Discovery address must be an https address");
   if (discovery) next.piDiscoveryUrl = discovery;
+
+  const katrina = katrinaUrl === undefined ? previous.katrinaUrl : String(katrinaUrl ?? "").trim() ? normalizeGatewayUrl(katrinaUrl) : "";
+  if (katrina === null) throw new Error("The Katrina address must be an https address");
+  if (katrina) next.katrinaUrl = katrina;
 
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -104,6 +108,10 @@ export const CONFIG = Object.freeze({
   /** Pi Discovery endpoint (defaults to Tunnus, or custom VITE_PI_DISCOVERY_URL / Settings). */
   get piDiscoveryUrl() {
     return normalizeGatewayUrl(readStored().piDiscoveryUrl) || normalizeGatewayUrl(env.VITE_PI_DISCOVERY_URL) || this.tunnusUrl;
+  },
+  /** Base address of Katrina Tunneli / events API (VITE_KATRINA_URL or Settings). */
+  get katrinaUrl() {
+    return normalizeGatewayUrl(readStored().katrinaUrl) || normalizeGatewayUrl(env.VITE_KATRINA_URL) || "https://events.riihimaenseurakunta.fi";
   },
   /** Optional push key for use outside Canva; never baked into the bundle (build:js clears VITE_SIGNAGE_PUSH_KEY). */
   get signagePushKey() {
