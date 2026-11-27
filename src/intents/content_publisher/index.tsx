@@ -104,9 +104,19 @@ function renderPreviewUi(request: RenderPreviewUiRequest) {
 }
 
 async function publishContent({ outputMedia, outputType, publishRef }: PublishContentRequest): Promise<PublishContentResponse> {
-  const target = targetById(outputType.id, { signageUrl: CONFIG.signageUrl });
-  if (isSignageTarget(target)) {
-    return publishSignageContent({ outputMedia, outputType, publishRef });
+  let discoveredTargets: DiscoveredExportTarget[] = [];
+  try {
+    discoveredTargets = await listDiscoveredExportTargets();
+  } catch {
+    // Discovery offline fallback
+  }
+
+  const target = targetById(outputType.id, { signageUrl: CONFIG.signageUrl, discoveredTargets });
+  if (isSignageTarget(target) || target?.category === "signage") {
+    return publishSignageContent(
+      { outputMedia, outputType, publishRef },
+      { signageUrl: target?.ingestUrl || CONFIG.signageUrl, discoveredTargets }
+    );
   }
 
   if (target?.id === "pigraphics-stream") {

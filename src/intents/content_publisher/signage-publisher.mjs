@@ -295,7 +295,8 @@ export async function publishSignageContent(
       appDefinedPayload: check.errors.join(","),
     };
   }
-  if (targetById(outputType.id, { signageUrl })?.enabled !== true) {
+  const target = targetById(outputType.id, { signageUrl, discoveredTargets: deps.discoveredTargets });
+  if (target?.enabled !== true) {
     return { status: "app_error", message: "Signage is not available yet." };
   }
 
@@ -314,7 +315,10 @@ export async function publishSignageContent(
 
   try {
     const payload = buildSignagePushPayload(settings, files);
-    const accepted = await pushFn(payload);
+    const accepted = await pushFn(payload, {
+      baseUrl: target?.ingestUrl || signageUrl,
+      auth: target?.auth,
+    });
     const finalStatus = await waitFn(accepted.pushId, {
       onProgress: (progress) => {
         if (onProgress) onProgress({ ...progress, label: describeSignagePush(progress.status) });

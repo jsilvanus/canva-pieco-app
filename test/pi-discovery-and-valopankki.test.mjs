@@ -27,6 +27,7 @@ import {
   getCanvaBrandKitPalettes,
 } from "../src/services/canva-sdk.mjs";
 import { CONFIG } from "../src/config.mjs";
+import { targetById } from "../src/intents/publish-targets.mjs";
 import {
   getOverwriteTarget,
   setOverwriteTarget,
@@ -87,6 +88,143 @@ test("listPiSystems discovers services via Tunnus OpenAPI /api/v1/discovery", as
   assert.equal(systems[1].venue, "keskuskirkko");
   assert.equal(systems[2].id, "kappeli-piprogram");
   assert.equal(systems[2].venue, "kappeli");
+});
+
+test("listPiSystems discovers multi-system Pi venues via media-relay in Tunnus Discovery", async () => {
+  const mockDiscoveryResponse = {
+    updated_at: "2026-11-27T20:00:00Z",
+    services: [
+      {
+        id: "media-relay",
+        name: "Media Relay (Web Radio Relay & Tunnel Router)",
+        type: "media-relay",
+        venue: "parish-wide",
+        endpoint_url: "https://media.riihimaenseurakunta.fi",
+        capabilities: ["audio_relay", "pi_tunnel_router", "canva_proxy"],
+        metadata: {
+          relayed_systems: ["keskuskirkko", "kappeli"],
+          venues: {
+            keskuskirkko: {
+              name: "Keskuskirkko AV",
+              canva_url: "https://media.riihimaenseurakunta.fi/pi/keskuskirkko/canva",
+              control_url: "https://media.riihimaenseurakunta.fi/pi/keskuskirkko/control",
+              status: "online",
+            },
+            kappeli: {
+              name: "Kappeli AV",
+              canva_url: "https://media.riihimaenseurakunta.fi/pi/kappeli/canva",
+              control_url: "https://media.riihimaenseurakunta.fi/pi/kappeli/control",
+              status: "online",
+            },
+          },
+        },
+      },
+    ],
+  };
+
+  const mockFetch = async (url) => {
+    if (url.includes("/api/v1/discovery")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => mockDiscoveryResponse,
+      };
+    }
+    return { ok: false, status: 404 };
+  };
+
+  const systems = await listPiSystems({
+    discoveryUrl: "https://tunnus.riihimaenseurakunta.fi",
+    gatewayUrl: "https://gateway.local:8443",
+    fetch: mockFetch,
+  });
+
+  assert.equal(systems.length, 3); // primary + 2 media-relay venues
+  assert.equal(systems[0].id, "primary");
+  assert.equal(systems[1].id, "keskuskirkko");
+  assert.equal(systems[1].name, "Keskuskirkko AV");
+  assert.equal(systems[1].gatewayUrl, "https://media.riihimaenseurakunta.fi/pi/keskuskirkko/canva");
+  assert.equal(systems[2].id, "kappeli");
+  assert.equal(systems[2].name, "Kappeli AV");
+  assert.equal(systems[2].gatewayUrl, "https://media.riihimaenseurakunta.fi/pi/kappeli/canva");
+});
+
+test("listPiSystems discovers direct Pi systems from web-radio-relay /api/v1/systems", async () => {
+  const mockRelaySystems = {
+    total: 2,
+    systems: [
+      {
+        id: "keskuskirkko",
+        name: "Keskuskirkko AV",
+        routes: {
+          canva: "/pi/keskuskirkko/canva",
+          picontrol: "/pi/keskuskirkko/control",
+        },
+        venue: { name: "Keskuskirkko" },
+        status: "online",
+      },
+    ],
+  };
+
+  const mockFetch = async (url) => {
+    if (url.endsWith("/api/v1/systems")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => mockRelaySystems,
+      };
+    }
+    return { ok: false, status: 404 };
+  };
+
+  const systems = await listPiSystems({
+    discoveryUrl: "https://media.riihimaenseurakunta.fi",
+    gatewayUrl: "https://gateway.local:8443",
+    fetch: mockFetch,
+  });
+
+  assert.equal(systems.length, 2); // primary + 1 direct relay system
+  assert.equal(systems[1].id, "keskuskirkko");
+  assert.equal(systems[1].name, "Keskuskirkko AV");
+  assert.equal(systems[1].gatewayUrl, "https://media.riihimaenseurakunta.fi/pi/keskuskirkko/canva");
+});
+
+test("targetById resolves dynamically discovered Sissi export targets", () => {
+  const discoveredTargets = [
+    {
+      id: "sissi-signage::lobby",
+      targetId: "lobby",
+      name: "Lobby Screen",
+      category: "signage",
+      aspectRatio: "16:9",
+      resolution: { width: 1920, height: 1080 },
+      ingestUrl: "https://signage.riihimaenseurakunta.fi/api/v1/push",
+      auth: { type: "oidc", client_id: "sissi-pub" },
+      serviceId: "sissi-signage",
+    },
+    {
+      id: "sissi-views::aikuistyo",
+      targetId: "aikuistyo",
+      name: "Aikuistyö View",
+      category: "signage",
+      aspectRatio: "16:9",
+      resolution: { width: 1920, height: 1080 },
+      ingestUrl: "https://signage.riihimaenseurakunta.fi/api/v1/push",
+      serviceId: "sissi-views",
+    },
+  ];
+
+  const screenTarget = targetById("lobby", { discoveredTargets });
+  assert.ok(screenTarget);
+  assert.equal(screenTarget.id, "lobby");
+  assert.equal(screenTarget.displayName, "Lobby Screen");
+  assert.equal(screenTarget.enabled, true);
+  assert.equal(screenTarget.ingestUrl, "https://signage.riihimaenseurakunta.fi/api/v1/push");
+
+  const viewTarget = targetById("aikuistyo", { discoveredTargets });
+  assert.ok(viewTarget);
+  assert.equal(viewTarget.displayName, "Aikuistyö View");
+  assert.equal(viewTarget.enabled, true);
 });
 
 test("listPiSystems falls back gracefully when discovery is offline", async () => {

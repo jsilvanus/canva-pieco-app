@@ -61,7 +61,8 @@ export function subscribeDraftAuthChanged(onChange: () => void): () => void;
 
 export type PublishSignageDeps = {
   signageUrl?: string;
-  pushSignage?: (request: SignagePushRequest) => Promise<SignagePushAccepted>;
+  discoveredTargets?: any[];
+  pushSignage?: (request: SignagePushRequest, options?: { baseUrl?: string; auth?: any }) => Promise<SignagePushAccepted>;
   waitForSignagePush?: (
     pushId: string,
     options?: { onProgress?: (progress: SignageProgress) => void },

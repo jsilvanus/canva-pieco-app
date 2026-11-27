@@ -273,10 +273,11 @@ export async function waitForTask(taskId, { onUpdate, pollMs = 700, timeoutMs = 
 /**
  * Step 2: Configure Presentation Pipeline and route to displays.
  */
-export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1, piOutput = null }) {
+export async function setupPresentation({ presentationId, pipelineId, matrixRoute, unblankProjectors, cueSlide = 1, piOutput = null, gatewayUrl = null, baseUrl = null }) {
   try {
     return await apiRequest("/api/v1/canva/setup", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({
         presentationId,
         pipelineId,
@@ -311,10 +312,11 @@ export async function setupPresentation({ presentationId, pipelineId, matrixRout
 /**
  * Step 3: Slide Navigation (next, prev, gotoPage).
  */
-export async function controlSlide({ pipelineId, action, page }) {
+export async function controlSlide({ pipelineId, action, page, gatewayUrl = null, baseUrl = null }) {
   try {
     return await apiRequest("/api/v1/canva/control", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({
         pipelineId,
         action,
@@ -344,10 +346,11 @@ export async function controlSlide({ pipelineId, action, page }) {
 /**
  * Step 3: Fade to Black (FTB) on Pi Program.
  */
-export async function toggleFtb({ pipelineId, enabled }) {
+export async function toggleFtb({ pipelineId, enabled, gatewayUrl = null, baseUrl = null }) {
   try {
     return await apiRequest("/api/v1/canva/control", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({
         pipelineId,
         action: "ftb",
@@ -366,10 +369,11 @@ export async function toggleFtb({ pipelineId, enabled }) {
 /**
  * Step 3: Hardware Projector Pic Mute (shutter beam blanking via /canva/control).
  */
-export async function setProjectorPicMute({ muted, pipelineId }) {
+export async function setProjectorPicMute({ muted, pipelineId, gatewayUrl = null, baseUrl = null }) {
   try {
     return await apiRequest("/api/v1/canva/control", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({
         pipelineId,
         action: "picMute",
@@ -386,9 +390,9 @@ export async function setProjectorPicMute({ muted, pipelineId }) {
 }
 
 /** DVE transition names advertised by PiGraphics through Pi Gateway. */
-export async function listCanvaAnimations() {
+export async function listCanvaAnimations({ gatewayUrl = null, baseUrl = null } = {}) {
   try {
-    const data = await apiRequest("/api/v1/canva/animations", { timeoutMs: 5000 });
+    const data = await apiRequest("/api/v1/canva/animations", { timeoutMs: 5000, baseUrl: gatewayUrl || baseUrl });
     const animations = Array.isArray(data?.animations) ? data.animations : [];
     return animations.filter((item) => typeof item === "string" || (item && typeof item.id === "string"));
   } catch (err) {
@@ -412,10 +416,13 @@ export async function pushCanvaGraphic({
   keyer = "usk",
   slot = 7,
   useAt = null,
+  gatewayUrl = null,
+  baseUrl = null,
 }) {
   try {
     return await apiRequest("/api/v1/graphics/canva/push", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({
         title,
         image,
@@ -448,10 +455,11 @@ export async function pushCanvaGraphic({
 /**
  * Takes active ATEM graphic keyer (USK or DSK) off air.
  */
-export async function setCanvaGraphicOffAir({ keyer = "usk", index = 1 } = {}) {
+export async function setCanvaGraphicOffAir({ keyer = "usk", index = 1, gatewayUrl = null, baseUrl = null } = {}) {
   try {
     return await apiRequest("/api/v1/graphics/canva/off-air", {
       method: "POST",
+      baseUrl: gatewayUrl || baseUrl,
       body: JSON.stringify({ keyer, index }),
     });
   } catch (err) {
@@ -466,9 +474,12 @@ export async function setCanvaGraphicOffAir({ keyer = "usk", index = 1 } = {}) {
 /**
  * Health check & status polling.
  */
-export async function getGatewayStatus(pipelineId = "pipgm1") {
+export async function getGatewayStatus(pipelineId = "pipgm1", { gatewayUrl = null, baseUrl = null } = {}) {
   try {
-    return await apiRequest(`/api/v1/canva/status?pipelineId=${pipelineId}`, { timeoutMs: 3000 });
+    return await apiRequest(`/api/v1/canva/status?pipelineId=${pipelineId}`, {
+      timeoutMs: 3000,
+      baseUrl: gatewayUrl || baseUrl,
+    });
   } catch (err) {
     if (CONFIG.isDev) {
       return {

@@ -11,6 +11,11 @@ export type Target = {
   label?: string;
   dynamicSize?: boolean;
   autoSize?: boolean;
+  category?: string;
+  ingestUrl?: string;
+  auth?: any;
+  targetId?: string;
+  serviceId?: string;
   accepts?: { image?: { format: string }; video?: { format: string } };
 };
 export type PublishSettingsData = {
@@ -57,6 +62,7 @@ export type TargetOptions = {
   saarnavideoUrl?: string;
   hasDiscoveredSaarnavideo?: boolean;
   enableSaarnavideo?: boolean;
+  discoveredTargets?: any[];
 };
 export type SignageFile = { url: string; pageNumber?: number; kind?: "image" | "video"; name?: string };
 export type SignagePushPage = { pageNumber: number; kind?: "image" | "video"; url: string; seconds?: number; alt?: string; headline?: string; caption?: string; link?: string };

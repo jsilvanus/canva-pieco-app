@@ -82,10 +82,28 @@ export function setupPresentation(args: {
   unblankProjectors: boolean;
   cueSlide?: number | null;
   piOutput?: string | null;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
 }): Promise<{ picMute?: boolean }>;
-export function controlSlide(args: { pipelineId: string; action: string; page?: number }): Promise<{ currentPage?: number } | null>;
-export function toggleFtb(args: { pipelineId: string; enabled: boolean }): Promise<unknown>;
-export function setProjectorPicMute(args: { muted: boolean; pipelineId: string }): Promise<unknown>;
+export function controlSlide(args: {
+  pipelineId: string;
+  action: string;
+  page?: number;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
+}): Promise<{ currentPage?: number } | null>;
+export function toggleFtb(args: {
+  pipelineId: string;
+  enabled: boolean;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
+}): Promise<unknown>;
+export function setProjectorPicMute(args: {
+  muted: boolean;
+  pipelineId: string;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
+}): Promise<unknown>;
 export function pushCanvaGraphic(args: {
   title: string;
   image?: string;
@@ -95,9 +113,19 @@ export function pushCanvaGraphic(args: {
   keyer?: string;
   slot?: number;
   useAt?: string | string[] | null;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
 }): Promise<unknown>;
-export function setCanvaGraphicOffAir(args?: { keyer?: string; index?: number }): Promise<unknown>;
-export function getGatewayStatus(pipelineId?: string): Promise<{ isSimulated?: boolean }>;
+export function setCanvaGraphicOffAir(args?: {
+  keyer?: string;
+  index?: number;
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
+}): Promise<unknown>;
+export function getGatewayStatus(
+  pipelineId?: string,
+  opts?: { gatewayUrl?: string | null; baseUrl?: string | null },
+): Promise<{ isSimulated?: boolean }>;
 export function describeTask(task: Task): { percent: number; label: string };
 export type GoLiveStep = { action: string; params: Record<string, unknown> };
 export type GoLiveOptions = { itemId: string; title?: string; feed: string; piOutput: string; projector: string; ftb: boolean };
@@ -105,4 +133,7 @@ export type GoLiveList = { id: string; name: string; expiresAt: string | null; r
 export function buildGoLiveSteps(options: GoLiveOptions): GoLiveStep[];
 export function createGoLiveList(options: GoLiveOptions): Promise<GoLiveList>;
 
-export function listCanvaAnimations(): Promise<Array<string | { id: string; label?: string }>>;
+export function listCanvaAnimations(opts?: {
+  gatewayUrl?: string | null;
+  baseUrl?: string | null;
+}): Promise<Array<string | { id: string; label?: string }>>;

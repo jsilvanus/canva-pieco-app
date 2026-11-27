@@ -123,7 +123,63 @@ export async function listPiSystems({
       for (const entry of list) {
         if (!entry || typeof entry !== "object") continue;
 
-        // If from general discovery without type query, filter by type if present
+        // 1. Check if entry is web-radio-relay (media-relay) aggregating multiple Pi systems
+        const isMediaRelay =
+          entry.type === "media-relay" ||
+          (Array.isArray(entry.capabilities) &&
+            (entry.capabilities.includes("pi_tunnel_router") || entry.capabilities.includes("canva_proxy")));
+
+        if (isMediaRelay && entry.metadata?.venues && typeof entry.metadata.venues === "object") {
+          for (const [venueKey, venueInfo] of Object.entries(entry.metadata.venues)) {
+            if (!venueInfo || typeof venueInfo !== "object") continue;
+            const canvaUrl = normalizeGatewayUrl(venueInfo.canva_url);
+            if (!canvaUrl || seenUrls.has(canvaUrl)) continue;
+            seenUrls.add(canvaUrl);
+
+            systems.push({
+              id: venueKey,
+              name: String(venueInfo.name || `${entry.name || "Pi System"} (${venueKey})`),
+              gatewayUrl: canvaUrl,
+              source: "discovered",
+              venue: venueKey,
+              online: venueInfo.status === "online",
+              type: "piprogram",
+              capabilities: ["slides", "stage_display", "atem", "canva_proxy"],
+              metadata: {
+                ...venueInfo,
+                mediaRelayUrl: entry.endpoint_url || entry.url,
+              },
+            });
+          }
+          continue;
+        }
+
+        // 2. Direct system entry from web-radio-relay /api/v1/systems
+        if (entry.routes?.canva || entry.canva) {
+          const rawCanva = entry.routes?.canva || entry.canva;
+          const resolvedCanva = String(rawCanva).startsWith("http")
+            ? rawCanva
+            : `${normalizedDiscovery.replace(/\/+$/, "")}${String(rawCanva).startsWith("/") ? "" : "/"}${rawCanva}`;
+          const canvaUrl = normalizeGatewayUrl(resolvedCanva);
+          if (canvaUrl && !seenUrls.has(canvaUrl)) {
+            seenUrls.add(canvaUrl);
+            const venueName = typeof entry.venue === "object" ? entry.venue?.name : entry.venue;
+            systems.push({
+              id: String(entry.id || canvaUrl),
+              name: String(entry.name || venueName || entry.id || canvaUrl),
+              gatewayUrl: canvaUrl,
+              source: "discovered",
+              venue: typeof venueName === "string" ? venueName : String(entry.id),
+              online: entry.status === "online" || typeof entry.online === "boolean" ? entry.online : true,
+              type: "piprogram",
+              capabilities: ["slides", "stage_display", "atem"],
+              metadata: entry.metadata && typeof entry.metadata === "object" ? entry.metadata : undefined,
+            });
+            continue;
+          }
+        }
+
+        // 3. Regular discovery filtering
         if (entry.type && serviceType && entry.type !== serviceType && entry.type !== "pigateway") {
           continue;
         }
@@ -415,10 +471,24 @@ export async function discoverAllServices({
       const type = String(service.type || "").toLowerCase();
       const caps = Array.isArray(service.capabilities) ? service.capabilities : [];
 
-      if (type === "piprogram" || type === "pigateway" || caps.includes("slides") || caps.includes("stage_display")) {
+      if (
+        type === "piprogram" ||
+        type === "pigateway" ||
+        type === "media-relay" ||
+        caps.includes("slides") ||
+        caps.includes("stage_display") ||
+        caps.includes("pi_tunnel_router") ||
+        caps.includes("canva_proxy")
+      ) {
         result.piGateways.push(service);
       }
-      if (type === "signage" || caps.includes("screen_push") || caps.includes("playlist_management")) {
+      if (
+        type === "signage" ||
+        type === "webview" ||
+        caps.includes("screen_push") ||
+        caps.includes("playlist_management") ||
+        caps.includes("embed")
+      ) {
         result.signageServices.push(service);
       }
       if (type === "valopankki" || caps.includes("asset_library") || caps.includes("media_bank")) {

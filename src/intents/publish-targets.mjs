@@ -89,7 +89,31 @@ export function getTargets(options) {
 export function targetById(id, options) {
   const stableId = id === "piprogram-atem" || id === "piprogram-vertical-projector" ? "piprogram" : id;
   const t = TARGETS.find((x) => x.id === stableId) ?? null;
-  return t ? withOptions(t, options) : null;
+  if (t) return withOptions(t, options);
+
+  if (Array.isArray(options?.discoveredTargets)) {
+    const dt = options.discoveredTargets.find((x) => x.targetId === id || x.id === id);
+    if (dt) {
+      const isSignage = dt.category === "signage";
+      return {
+        id: dt.targetId || dt.id,
+        displayName: dt.name,
+        category: dt.category || "signage",
+        kind: isSignage ? "signage" : undefined,
+        orientation: dt.aspectRatio === "9:16" ? "portrait" : "landscape",
+        width: dt.resolution?.width || 1920,
+        height: dt.resolution?.height || 1080,
+        enabled: true,
+        dynamicSize: true,
+        ingestUrl: dt.ingestUrl,
+        auth: dt.auth,
+        targetId: dt.targetId || dt.id,
+        serviceId: dt.serviceId,
+      };
+    }
+  }
+
+  return null;
 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
